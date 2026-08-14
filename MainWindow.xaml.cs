@@ -19,6 +19,8 @@ namespace Mp3Player
 {
     public partial class MainWindow : Window
     {
+        private UserSettings userSettings = new UserSettings();
+        private readonly DispatcherTimer settingsSaveTimer = new DispatcherTimer();
         private readonly AudioPlayer player = new AudioPlayer();
         private readonly List<string> tracks = new List<string>();
         private int currentIndex = -1;
@@ -34,6 +36,7 @@ namespace Mp3Player
         private string currentTrackFullName = string.Empty;
         private int marqueePos = 0;
         private readonly DispatcherTimer markedTimer;
+        // effect enable flags are managed via AudioPlayer; no local persistent flags required
         // Manage-audio state
         private bool manageEnabled = false;
         private int? pendingDeleteIndex = null;
@@ -67,10 +70,50 @@ namespace Mp3Player
                 markedTimer.Stop();
             };
 
-            SliderVolume.Value = 0.8;
+            // load persisted settings
+            userSettings = SettingsService.Load();
+
+            // apply settings to UI and audio
+            SliderVolume.Value = userSettings.Volume;
+            SliderEcho.Value = userSettings.EchoLevel;
+            SliderReverb.Value = userSettings.ReverbLevel;
+            SliderStereo.Value = userSettings.StereoLevel;
+            // set EQ bands
+            try
+            {
+                for (int i = 0; i < EqualizerSampleProvider.Frequencies.Length; i++)
+                {
+                    var ctrl = this.FindName($"Band{i}") as Slider;
+                    if (ctrl != null) ctrl.Value = userSettings.EqGains.Length > i ? userSettings.EqGains[i] : 0f;
+                }
+            }
+            catch { }
             // ensure play indicator initial state
             SetButtonIndicator(BtnPlayPause, false);
             UpdatePowerIndicator();
+
+            // initialize audio effect levels from persisted settings
+            player.UpdateEchoLevel(userSettings.EchoLevel);
+            player.UpdateReverbLevel(userSettings.ReverbLevel);
+            player.UpdateStereoLevel(userSettings.StereoLevel);
+            // enable effects state
+            IndicatorHelper.SetIsIndicatorOn(BtnEcho, userSettings.EchoEnabled);
+            SliderEcho.IsEnabled = userSettings.EchoEnabled;
+            player.EnableEcho(userSettings.EchoEnabled);
+            IndicatorHelper.SetIsIndicatorOn(BtnReverb, userSettings.ReverbEnabled);
+            SliderReverb.IsEnabled = userSettings.ReverbEnabled;
+            player.EnableReverb(userSettings.ReverbEnabled);
+            IndicatorHelper.SetIsIndicatorOn(BtnStereo, userSettings.StereoEnabled);
+            SliderStereo.IsEnabled = userSettings.StereoEnabled;
+            player.EnableStereo(userSettings.StereoEnabled);
+
+            // schedule settings save timer (debounce)
+            settingsSaveTimer.Interval = TimeSpan.FromSeconds(5);
+            settingsSaveTimer.Tick += (s, e) =>
+            {
+                settingsSaveTimer.Stop();
+                SettingsService.Save(userSettings);
+            };
         }
 
         private void UpdatePowerIndicator()
@@ -111,6 +154,52 @@ namespace Mp3Player
         private void ScheduleTrackListHighlightRefresh()
         {
             Dispatcher.BeginInvoke(new Action(RefreshTrackListHighlights), DispatcherPriority.Loaded);
+        }
+
+        private void ScheduleSettingsSave()
+        {
+            try
+            {
+                if (settingsSaveTimer.IsEnabled)
+                {
+                    settingsSaveTimer.Stop();
+                }
+                settingsSaveTimer.Start();
+            }
+            catch { }
+        }
+
+        private void SliderEcho_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                player.UpdateEchoLevel((float)e.NewValue);
+                userSettings.EchoLevel = (float)e.NewValue;
+                ScheduleSettingsSave();
+            }
+            catch { }
+        }
+
+        private void SliderReverb_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                player.UpdateReverbLevel((float)e.NewValue);
+                userSettings.ReverbLevel = (float)e.NewValue;
+                ScheduleSettingsSave();
+            }
+            catch { }
+        }
+
+        private void SliderStereo_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                player.UpdateStereoLevel((float)e.NewValue);
+                userSettings.StereoLevel = (float)e.NewValue;
+                ScheduleSettingsSave();
+            }
+            catch { }
         }
 
         private void Player_PlaybackEnded(object? sender, EventArgs e)
@@ -324,11 +413,6 @@ namespace Mp3Player
             }
             catch { }
         }
-
-        private bool echoEnabled = false;
-        private bool reverbEnabled = false;
-        private bool stereoEnabled = false;
-
 
         private void CommitPendingOperations()
         {
@@ -645,6 +729,12 @@ namespace Mp3Player
             player.SetVolume((float)SliderVolume.Value);
             if(TxtVolumeLevel != null)
                 TxtVolumeLevel.Text = $"{(int)(SliderVolume.Value * 100)}%";
+            try
+            {
+                userSettings.Volume = SliderVolume.Value;
+                ScheduleSettingsSave();
+            }
+            catch { }
         }
 
         private void BtnToggleList_Click(object sender, RoutedEventArgs e)
@@ -890,6 +980,12 @@ namespace Mp3Player
                 gains[i] = ctrl != null ? (float)ctrl.Value : 0f;
             }
             player.UpdateEqGains(gains);
+            try
+            {
+                userSettings.EqGains = (float[])gains.Clone();
+                ScheduleSettingsSave();
+            }
+            catch { }
         }
 
         private void EffectToggled(object sender, RoutedEventArgs e)
@@ -904,15 +1000,28 @@ namespace Mp3Player
 
                 if (btn == BtnEcho)
                 {
-                    echoEnabled = !current;
+                    bool newEnabled = !current;
+                    // enable/disable slider and notify player
+                    SliderEcho.IsEnabled = newEnabled;
+                    player.EnableEcho(newEnabled);
+                    userSettings.EchoEnabled = newEnabled;
+                    ScheduleSettingsSave();
                 }
                 else if (btn == BtnReverb)
                 {
-                    reverbEnabled = !current;
+                    bool newEnabled = !current;
+                    SliderReverb.IsEnabled = newEnabled;
+                    player.EnableReverb(newEnabled);
+                    userSettings.ReverbEnabled = newEnabled;
+                    ScheduleSettingsSave();
                 }
                 else if (btn == BtnStereo)
                 {
-                    stereoEnabled = !current;
+                    bool newEnabled = !current;
+                    SliderStereo.IsEnabled = newEnabled;
+                    player.EnableStereo(newEnabled);
+                    userSettings.StereoEnabled = newEnabled;
+                    ScheduleSettingsSave();
                 }
                 // TODO: wire these flags into audio pipeline when implemented
             }
@@ -947,6 +1056,13 @@ namespace Mp3Player
             catch { }
             finally
             {
+                // flush any pending settings save
+                try
+                {
+                    settingsSaveTimer.Stop();
+                    SettingsService.Save(userSettings);
+                }
+                catch { }
                 player.Dispose();
                 base.OnClosed(e);
                 System.Windows.Application.Current.Shutdown();

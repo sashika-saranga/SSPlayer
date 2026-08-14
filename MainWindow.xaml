@@ -146,6 +146,7 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
                     <Button Name="BtnSelectFolder" Click="BtnSelectFolder_Click" Width="120">Select Folder</Button>
                     <TextBlock Name="TxtFolder" Margin="8,4" VerticalAlignment="Center" TextWrapping="Wrap" />
+
                 </StackPanel>
                 <ListBox Name="ListTracks" Margin="4" MouseDoubleClick="ListTracks_MouseDoubleClick" SelectionChanged="ListTracks_SelectionChanged" ItemContainerStyle="{StaticResource TrackListItemStyle}" />
             </DockPanel>
@@ -164,6 +165,28 @@
                 </StackPanel>
             </StackPanel>
         </Border>
+        <!-- Right-side Manage Audio Files panel -->
+        <GroupBox Name="ManageAudioGroup" Header="Manage Audio Files" Grid.Column="2" Margin="4" Visibility="Collapsed">
+            <StackPanel Margin="6">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox Name="RbEnableManage" Content="Enable Manage Mode" Checked="RbEnableManage_Checked" Unchecked="RbEnableManage_Unchecked" />
+                    <TextBlock Name="TxtManageWarning" Foreground="DarkRed" Margin="8,0,0,0" Visibility="Collapsed">Warning: enabling will allow permanent file operations</TextBlock>
+                </StackPanel>
+                <StackPanel Margin="6">
+                    <TextBlock Text="Selected file:" FontWeight="Bold" />
+                    <TextBlock Name="TxtSelectedFile" Text="(none)" Margin="0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6">
+                        <Button Name="BtnRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" IsEnabled="False">Rename</Button>
+                        <Button Name="BtnDelete" Click="BtnDelete_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0" IsEnabled="False">Delete</Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,6">
+                        <TextBox Name="TxtRename" Width="180" IsEnabled="False" />
+                        <Button Name="BtnApplyRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0">Apply</Button>
+                    </StackPanel>
+                    <TextBlock Name="TxtMarkedNotice" Foreground="Yellow" Visibility="Collapsed" Margin="0,6" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
 
         <Border Grid.Column="1" Margin="8" Background="#2b2b2b" Padding="8">
             <StackPanel Orientation="Vertical">
@@ -285,14 +308,17 @@
                         <StackPanel Orientation="Horizontal" Margin="4">
                             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                 <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Echo</Button>
+                                <Slider Name="SliderEcho" Minimum="0" Maximum="1" Value="0" Width="100" ValueChanged="SliderEcho_ValueChanged" IsEnabled="False" />
                                 <TextBlock Text="Echo" Foreground="White" HorizontalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                 <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Reverb</Button>
+                                <Slider Name="SliderReverb" Minimum="0" Maximum="1" Value="0" Width="100" ValueChanged="SliderReverb_ValueChanged" IsEnabled="False" />
                                 <TextBlock Text="Reverb" Foreground="White" HorizontalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                 <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Stereo</Button>
+                                <Slider Name="SliderStereo" Minimum="0" Maximum="2" Value="0" Width="100" ValueChanged="SliderStereo_ValueChanged" IsEnabled="False" />
                                 <TextBlock Text="Stereo" Foreground="White" HorizontalAlignment="Center" />
                             </StackPanel>
                         </StackPanel>
@@ -301,25 +327,6 @@
             </GroupBox>
             </StackPanel>
         </Border>
-        <!-- Right-side Manage Audio Files panel -->
-        <GroupBox Name="ManageAudioGroup" Header="Manage Audio Files" Grid.Column="2" Margin="4" Visibility="Collapsed">
-            <StackPanel Margin="6">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <RadioButton Name="RbEnableManage" Content="Enable Manage Mode" Checked="RbEnableManage_Checked" Unchecked="RbEnableManage_Unchecked" />
-                    <TextBlock Name="TxtManageWarning" Foreground="DarkRed" Margin="8,0,0,0" Visibility="Collapsed">Warning: enabling will allow permanent file operations.</TextBlock>
-                </StackPanel>
-                <Separator Margin="0,6" />
-                <TextBlock Text="Selected file:" FontWeight="Bold" />
-                <TextBlock Name="TxtSelectedFile" Text="(none)" TextTrimming="CharacterEllipsis" Margin="0,4" />
-                <StackPanel Orientation="Horizontal" Margin="0,4">
-                    <TextBox Name="TxtRename" Width="140" />
-                    <Button Name="BtnRename" Click="BtnRename_Click" Margin="6,0" Width="80">Apply</Button>
-                    <Button Name="BtnDelete" Click="BtnDelete_Click" Margin="6,0" Width="80">Mark Delete</Button>
-                </StackPanel>
-                <TextBlock Name="TxtMarkedNotice" Text="" Foreground="DarkGreen" Visibility="Collapsed" FontStyle="Italic" FontSize="11" Margin="0,6,0,0" />
-                <TextBlock Text="Rename will change the file name on disk when applied. Marked deletes are executed when you click elsewhere or select another track." FontStyle="Italic" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
-            </StackPanel>
-        </GroupBox>
     </Grid>
 
         <!-- Invisible corner resize handles -->

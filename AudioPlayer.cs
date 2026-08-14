@@ -16,6 +16,9 @@ namespace Mp3Player.Audio
         private AudioFileReader? audioFileReader;
         private ISampleProvider? finalSampleProvider;
         private EqualizerSampleProvider? equalizer;
+        private EchoSampleProvider? echo;
+        private ReverbSampleProvider? reverb;
+        private StereoWidenSampleProvider? stereo;
         private SampleAggregator? aggregator;
         private readonly object lockObj = new object();
 
@@ -38,8 +41,13 @@ namespace Mp3Player.Audio
             // build processing chain: equalizer -> aggregator (FFT) -> metering -> output
             equalizer = new EqualizerSampleProvider(audioFileReader.ToSampleProvider(), EqGains);
 
+            // add echo and reverb in chain
+            echo = new EchoSampleProvider(equalizer, echoLevel);
+            reverb = new ReverbSampleProvider(echo, reverbLevel);
+            stereo = new StereoWidenSampleProvider(reverb, stereoLevel);
+
             // aggregator computes FFT and raises mapped band levels
-            aggregator = new SampleAggregator(equalizer, 2048);
+            aggregator = new SampleAggregator(stereo, 2048);
             aggregator.FftCalculated += (s, a) => SampleFramesAvailable?.Invoke(this, a);
 
             // add metering so callers can observe peak levels if needed
@@ -140,6 +148,67 @@ namespace Mp3Player.Audio
             if (equalizer != null)
             {
                 equalizer.UpdateGains(EqGains);
+            }
+        }
+
+        private float echoLevel = 0f;
+        private float reverbLevel = 0f;
+        private float stereoLevel = 0f;
+        private bool echoEnabled = false;
+        private bool reverbEnabled = false;
+        private bool stereoEnabled = false;
+
+        public void UpdateEchoLevel(float level)
+        {
+            echoLevel = level;
+            if (echo != null)
+            {
+                echo.SetLevel(level);
+            }
+        }
+
+        public void UpdateReverbLevel(float level)
+        {
+            reverbLevel = level;
+            if (reverb != null)
+            {
+                reverb.SetLevel(level);
+            }
+        }
+
+        public void UpdateStereoLevel(float level)
+        {
+            stereoLevel = level;
+            if (stereo != null)
+            {
+                stereo.SetLevel(level);
+            }
+        }
+
+        public void EnableEcho(bool enable)
+        {
+            echoEnabled = enable;
+            if (echo != null)
+            {
+                echo.SetLevel(enable ? echoLevel : 0f);
+            }
+        }
+
+        public void EnableReverb(bool enable)
+        {
+            reverbEnabled = enable;
+            if (reverb != null)
+            {
+                reverb.SetLevel(enable ? reverbLevel : 0f);
+            }
+        }
+
+        public void EnableStereo(bool enable)
+        {
+            stereoEnabled = enable;
+            if (stereo != null)
+            {
+                stereo.SetLevel(enable ? stereoLevel : 0f);
             }
         }
 
