@@ -1,0 +1,331 @@
+<Window x:Class="Mp3Player.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Mp3Player"
+        Title="MP3 Player" Height="720" Width="1000"
+        WindowStyle="None" ResizeMode="NoResize" Background="#1f1f1f" FontFamily="Courier New">
+    <Window.Resources>
+
+        <!-- Big rectangular button with small oval indicator -->
+        <Style x:Key="BigButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="100" />
+            <Setter Property="Height" Value="48" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="border" Background="#555" CornerRadius="4" BorderBrush="#111" BorderThickness="1">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+        <!-- Corner thumbs removed from resources; define in Window content if needed -->
+                            <Ellipse x:Name="Indicator" Width="12" Height="8" Fill="#224422" Stroke="#001100" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <!-- Only change the small indicator on hover; don't highlight the whole button -->
+                                <Setter TargetName="Indicator" Property="Fill" Value="#558844" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <!-- Indicator lights brighter when pressed -->
+                                <Setter TargetName="Indicator" Property="Fill" Value="#88FF66" />
+                            </Trigger>
+                            <!-- If indicator attached property is set, show bright indicator regardless of hover -->
+                            <Trigger Property="local:IndicatorHelper.IsIndicatorOn" Value="True">
+                                <Setter TargetName="Indicator" Property="Fill" Value="#88FF66" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard Name="PulseStoryboard">
+                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetName="Indicator" Storyboard.TargetProperty="Opacity" From="0.6" To="1.0" Duration="0:0:0.8" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="PulseStoryboard" />
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Monochrome display TextBox style -->
+        <Style x:Key="MonoDisplayTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#A7F07B" />
+            <Setter Property="Foreground" Value="#001100" />
+            <Setter Property="FontFamily" Value="Consolas" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="BorderBrush" Value="#224400" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Height" Value="24" />
+        </Style>
+
+        <!-- Power button style (red indicator) -->
+        <Style x:Key="PowerButtonStyle" TargetType="Button" BasedOn="{StaticResource BigButtonStyle}">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="border" Background="#444" CornerRadius="4" BorderBrush="#111" BorderThickness="1">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Ellipse x:Name="Indicator" Width="10" Height="6" Fill="#442222" Stroke="#220000" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Indicator" Property="Fill" Value="#884444" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Indicator" Property="Fill" Value="#FF6666" />
+                            </Trigger>
+                            <Trigger Property="local:IndicatorHelper.IsIndicatorOn" Value="True">
+                                <Setter TargetName="Indicator" Property="Fill" Value="#FF4444" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Slider thumb sizing for main sliders -->
+        <Style x:Key="LargeThumbStyle" TargetType="Thumb">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Background" Value="#ddd" />
+            <Setter Property="BorderBrush" Value="#333" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Invisible corner resize grips -->
+        <Style x:Key="InvisibleCornerThumbStyle" TargetType="Thumb">
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Track list item styling -->
+        <Style x:Key="TrackListItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#A7F07B" />
+                    <Setter Property="Foreground" Value="Black" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid>
+    <Grid x:Name="RootGrid" Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="*" />
+            <!-- start collapsed (width 0) so right panel doesn't appear empty on first open -->
+            <ColumnDefinition Width="0" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Track list -->
+        <GroupBox Header="Track List" Grid.Column="0" Margin="4">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
+                    <Button Name="BtnSelectFolder" Click="BtnSelectFolder_Click" Width="120">Select Folder</Button>
+                    <TextBlock Name="TxtFolder" Margin="8,4" VerticalAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+                <ListBox Name="ListTracks" Margin="4" MouseDoubleClick="ListTracks_MouseDoubleClick" SelectionChanged="ListTracks_SelectionChanged" ItemContainerStyle="{StaticResource TrackListItemStyle}" />
+            </DockPanel>
+        </GroupBox>
+
+        <!-- Player and visualizer -->
+        <!-- Title bar / drag area around main player -->
+        <Border Grid.Column="1" Margin="8" Background="#222" CornerRadius="6" Padding="6" x:Name="TitleBar" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                <TextBlock Text="Retro HiFi" Foreground="#A7F07B" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <!-- decorative LEDs -->
+                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Margin="8" Background="#2b2b2b" Padding="8">
+            <StackPanel Orientation="Vertical">
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Name="BtnToggleList" Click="BtnToggleList_Click" Width="28" Height="28" HorizontalAlignment="Left" Grid.Column="0">☰</Button>
+                <Button Name="BtnToggleAudio" Click="BtnToggleAudio_Click" Width="28" Height="28" HorizontalAlignment="Right" Grid.Column="2">⚙</Button>
+            </Grid>
+            <Border x:Name="MainPlayerBorder" BorderBrush="Gray" BorderThickness="1" Padding="8" CornerRadius="4" MouseLeftButtonDown="MainPlayerBorder_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="0">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnPrev" Click="BtnPrev_Click" Margin="6">◀</Button>
+                                <TextBlock Text="Prev" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnPlayPause" Click="BtnPlayPause_Click" Margin="6">Play</Button>
+                                <TextBlock Text="Play / Pause" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnNext" Click="BtnNext_Click" Margin="6">▶</Button>
+                                <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </UniformGrid>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,0,0">
+                    <TextBlock Text="Volume" VerticalAlignment="Center" Margin="8,0" Foreground="White" />
+                    <Slider Name="SliderVolume" Minimum="0" Maximum="1" Value="0.8" Width="160" ValueChanged="SliderVolume_ValueChanged" Height="24">
+                        <Slider.Resources>
+                            <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
+                        </Slider.Resources>
+                    </Slider>
+                    <!-- Maximize/Restore button -->
+                    <Button Name="BtnMaxRestore" Click="BtnMaxRestore_Click" Style="{StaticResource BigButtonStyle}" Width="48" Height="32" Margin="6,0">▢</Button>
+                    <Button Name="BtnPower" Click="BtnPower_Click" Style="{StaticResource PowerButtonStyle}" Margin="6,0">⏻</Button>
+                </StackPanel>
+                    </Grid>
+
+                    <Grid Margin="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <!-- background line to represent full track -->
+                        <Rectangle Grid.Column="0" Height="4" VerticalAlignment="Center" Fill="#444" RadiusX="2" RadiusY="2" />
+                        <Slider Name="SliderProgress" Minimum="0" Maximum="1" ValueChanged="SliderProgress_ValueChanged" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" Grid.Column="0" PreviewMouseLeftButtonDown="SliderProgress_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="SliderProgress_PreviewMouseLeftButtonUp">
+                            <Slider.Resources>
+                                <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
+                            </Slider.Resources>
+                        </Slider>
+                        <!-- removed small time display; main track info shows progress -->
+                    </Grid>
+
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+
+            <!-- Track info - monochrome LCD style -->
+            <Border Name="TrackInfoBorder" Background="#A7F07B" CornerRadius="4" BorderBrush="#224400" BorderThickness="1" Padding="8" Margin="0,8,0,0">
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Name="TxtTrackName" FontFamily="Consolas" FontWeight="Bold" Foreground="#001100" FontSize="14" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock Text="Status:" FontWeight="Bold" Foreground="#001100" />
+                        <TextBlock Name="TxtPlayStatus" Margin="6,0" Foreground="#001100" />
+                        <TextBlock Text="  Volume:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
+                        <TextBlock Name="TxtVolumeLevel" Margin="6,0" Foreground="#001100" />
+                        <TextBlock Text="  " />
+                        <TextBlock Text="Time:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
+                        <TextBlock Name="TxtTimeInfo" Margin="6,0" Foreground="#001100" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+                <GroupBox Header="Spectrum Analyzer" Margin="0,8,0,0" Foreground="White">
+                <Canvas Name="SpectrumCanvas" Height="150" Background="Black" />
+                <!-- Patch placeholder: no-op insertion to aid future patches -->
+            </GroupBox>
+
+                <GroupBox Name="AudioSettingsGroup" Header="Audio Settings" Margin="0,8,0,0" Foreground="White">
+                <ScrollViewer Height="300">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="4" VerticalAlignment="Center">
+                            <StackPanel>
+                                <TextBlock Text="Equalizer" FontWeight="Bold" />
+                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="200">
+                                    <StackPanel Orientation="Horizontal" Margin="0,4" HorizontalAlignment="Center">
+                                        <!-- 15 vertical band sliders -->
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band0" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="25 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band1" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="40 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band2" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="63 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band3" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="100 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band4" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="160 Hz" HorizontalAlignment="Center" /></StackPanel>
+
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band5" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="250 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band6" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="400 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band7" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="630 Hz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band8" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band9" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1.6 kHz" HorizontalAlignment="Center" /></StackPanel>
+
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band10" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="2.5 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band11" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="4 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band12" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="6.3 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band13" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="10 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band14" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="16 kHz" HorizontalAlignment="Center" /></StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="4">
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Echo</Button>
+                                <TextBlock Text="Echo" Foreground="White" HorizontalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Reverb</Button>
+                                <TextBlock Text="Reverb" Foreground="White" HorizontalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Stereo</Button>
+                                <TextBlock Text="Stereo" Foreground="White" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </GroupBox>
+            </StackPanel>
+        </Border>
+        <!-- Right-side Manage Audio Files panel -->
+        <GroupBox Name="ManageAudioGroup" Header="Manage Audio Files" Grid.Column="2" Margin="4" Visibility="Collapsed">
+            <StackPanel Margin="6">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <RadioButton Name="RbEnableManage" Content="Enable Manage Mode" Checked="RbEnableManage_Checked" Unchecked="RbEnableManage_Unchecked" />
+                    <TextBlock Name="TxtManageWarning" Foreground="DarkRed" Margin="8,0,0,0" Visibility="Collapsed">Warning: enabling will allow permanent file operations.</TextBlock>
+                </StackPanel>
+                <Separator Margin="0,6" />
+                <TextBlock Text="Selected file:" FontWeight="Bold" />
+                <TextBlock Name="TxtSelectedFile" Text="(none)" TextTrimming="CharacterEllipsis" Margin="0,4" />
+                <StackPanel Orientation="Horizontal" Margin="0,4">
+                    <TextBox Name="TxtRename" Width="140" />
+                    <Button Name="BtnRename" Click="BtnRename_Click" Margin="6,0" Width="80">Apply</Button>
+                    <Button Name="BtnDelete" Click="BtnDelete_Click" Margin="6,0" Width="80">Mark Delete</Button>
+                </StackPanel>
+                <TextBlock Name="TxtMarkedNotice" Text="" Foreground="DarkGreen" Visibility="Collapsed" FontStyle="Italic" FontSize="11" Margin="0,6,0,0" />
+                <TextBlock Text="Rename will change the file name on disk when applied. Marked deletes are executed when you click elsewhere or select another track." FontStyle="Italic" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </GroupBox>
+    </Grid>
+
+        <!-- Invisible corner resize handles -->
+        <Thumb Name="ThumbTopLeft" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="SizeNWSE" DragDelta="ThumbTopLeft_DragDelta" Panel.ZIndex="1000" />
+        <Thumb Name="ThumbTopRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" DragDelta="ThumbTopRight_DragDelta" Panel.ZIndex="1000" />
+        <Thumb Name="ThumbBottomLeft" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="SizeNESW" DragDelta="ThumbBottomLeft_DragDelta" Panel.ZIndex="1000" />
+        <Thumb Name="ThumbBottomRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragDelta="ThumbBottomRight_DragDelta" Panel.ZIndex="1000" />
+    </Grid>
+</Window>
