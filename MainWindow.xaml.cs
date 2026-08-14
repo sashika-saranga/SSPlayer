@@ -43,6 +43,8 @@ namespace Mp3Player
         private int pendingRenameIndex = -1;
         private string? pendingRenameName = null;
         private double rightPanelWidth = 480;
+        // retained visuals for spectrum to avoid per-frame allocations
+        private System.Windows.Shapes.Rectangle[][]? spectrumRects = null;
 
         public MainWindow()
         {
@@ -501,16 +503,16 @@ namespace Mp3Player
 
         private void Player_SampleFramesAvailable(object? sender, FrameEventArgs e)
         {
-            // simple visualization: draw bars from peak values
-            Dispatcher.Invoke(() =>
+            // simple visualization: update retained bars from peak values
+            // Use BeginInvoke so audio thread is not blocked by UI work
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                SpectrumCanvas.Children.Clear();
                 if (e.Volumes == null) return;
                 int bands = EqualizerSampleProvider.Frequencies.Length; // match EQ band count
                 const int bulbsPerBand = 9; // 4 green, 3 amber, 2 red
                 const int greenCount = 4;
                 const int amberCount = 3;
-                const int redCount = 2;
+                // layout calculations
                 double spacing = 6.0; // gap between bands
                 double totalSpacing = spacing * (bands - 1);
                 double bandWidth = bands > 0 ? Math.Max(20, (SpectrumCanvas.ActualWidth - totalSpacing) / bands) : 20;
@@ -520,47 +522,60 @@ namespace Mp3Player
                 double bulbWidth = Math.Max(8, bandWidth * 0.7);
                 double leftOffset = (bandWidth - bulbWidth) / 2.0;
 
+                // create retained rectangles if not created or band count changed
+                if (spectrumRects == null || spectrumRects.Length != bands)
+                {
+                    SpectrumCanvas.Children.Clear();
+                    spectrumRects = new System.Windows.Shapes.Rectangle[bands][];
+                    for (int i = 0; i < bands; i++)
+                    {
+                        spectrumRects[i] = new System.Windows.Shapes.Rectangle[bulbsPerBand];
+                        for (int b = 0; b < bulbsPerBand; b++)
+                        {
+                            var rect = new System.Windows.Shapes.Rectangle
+                            {
+                                Width = bulbWidth,
+                                Height = bulbHeight,
+                                Fill = new SolidColorBrush(Color.FromRgb(40, 40, 40)),
+                                RadiusX = 2,
+                                RadiusY = 2,
+                                Stroke = Brushes.Black,
+                                StrokeThickness = 1
+                            };
+                            spectrumRects[i][b] = rect;
+                            SpectrumCanvas.Children.Add(rect);
+                        }
+                    }
+                }
+
+                // update positions and fills
                 for (int i = 0; i < bands; i++)
                 {
                     double level = 0;
-                    // e.Volumes contains per-band magnitudes from FFT (SampleAggregator)
-                    if (e.Volumes != null && i < e.Volumes.Length) level = e.Volumes[i];
+                    if (i < e.Volumes.Length) level = e.Volumes[i];
                     level = Math.Max(0.0, Math.Min(1.0, level));
 
-                    // determine how many bulbs light up (0..bulbsPerBand)
                     int lit = (int)Math.Round(level * bulbsPerBand);
                     if (lit < 0) lit = 0; if (lit > bulbsPerBand) lit = bulbsPerBand;
 
                     for (int b = 0; b < bulbsPerBand; b++)
                     {
-                        // bottom bulb index 0 -> bottom of canvas
                         double x = i * (bandWidth + spacing) + leftOffset;
                         double y = SpectrumCanvas.ActualHeight - ((b + 1) * bulbHeight + b * bulbSpacing);
-
-                        bool on = b < lit;
-                        Brush fill;
-                        if (!on) fill = new SolidColorBrush(Color.FromRgb(40, 40, 40)); // unlit dark
-                        else if (b < greenCount) fill = Brushes.LimeGreen;
-                        else if (b < greenCount + amberCount) fill = Brushes.Orange;
-                        else fill = Brushes.Red;
-
-                        var rect = new Rectangle
-                        {
-                            Width = bulbWidth,
-                            Height = bulbHeight,
-                            Fill = fill,
-                            RadiusX = 2,
-                            RadiusY = 2,
-                            Stroke = Brushes.Black,
-                            StrokeThickness = 1
-                        };
-
+                        var rect = spectrumRects[i][b];
                         Canvas.SetLeft(rect, x);
                         Canvas.SetTop(rect, y);
-                        SpectrumCanvas.Children.Add(rect);
+                        rect.Width = bulbWidth;
+                        rect.Height = bulbHeight;
+
+                        bool on = b < lit;
+                        if (!on) rect.Fill = new SolidColorBrush(Color.FromRgb(40, 40, 40));
+                        else if (b < greenCount) rect.Fill = Brushes.LimeGreen;
+                        else if (b < greenCount + amberCount) rect.Fill = Brushes.Orange;
+                        else rect.Fill = Brushes.Red;
                     }
                 }
-            });
+            }));
         }
 
         private void UiTimer_Tick(object? sender, EventArgs e)

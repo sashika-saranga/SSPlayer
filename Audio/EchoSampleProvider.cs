@@ -28,11 +28,12 @@ namespace Mp3Player.Audio
         public int Read(float[] bufferOut, int offset, int count)
         {
             int samplesRead = source.Read(bufferOut, offset, count);
-            int channels = WaveFormat.Channels;
+            if (samplesRead == 0) return 0;
+            int len = buffer.Length;
+            int idx = bufferPos;
             for (int n = 0; n < samplesRead; n++)
             {
-                int bufIndex = (bufferPos + n) % buffer.Length;
-                float delayed = buffer[bufIndex];
+                float delayed = buffer[idx];
                 float dry = bufferOut[offset + n];
                 float wet = delayed * level;
                 float outSample = dry + wet;
@@ -42,9 +43,12 @@ namespace Mp3Player.Audio
                 bufferOut[offset + n] = outSample;
 
                 // write current sample into delay buffer (simple feedback-free echo)
-                buffer[bufIndex] = dry + delayed * 0.5f; // minor feedback to sustain
+                buffer[idx] = dry + delayed * 0.5f; // minor feedback to sustain
+
+                idx++;
+                if (idx >= len) idx = 0;
             }
-            bufferPos = (bufferPos + samplesRead) % buffer.Length;
+            bufferPos = idx;
             return samplesRead;
         }
 

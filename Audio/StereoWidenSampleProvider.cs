@@ -28,9 +28,9 @@ namespace Mp3Player.Audio
                 return samplesRead;
             }
 
+            // process in blocks of channels to minimize index math
             for (int n = 0; n < samplesRead; n += channels)
             {
-                // process pairs
                 float l = buffer[offset + n];
                 float r = buffer[offset + n + 1];
                 // mid/side

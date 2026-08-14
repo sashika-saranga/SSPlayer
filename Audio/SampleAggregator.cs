@@ -5,12 +5,22 @@ using NAudio.Wave;
 namespace Mp3Player.Audio
 {
     // Wraps an ISampleProvider, passes samples through and computes FFT-based band levels
+    // Optimized to reuse buffers and precompute window/band boundaries to reduce allocations
     public class SampleAggregator : ISampleProvider
     {
         private readonly ISampleProvider source;
         private readonly int fftLength;
         private readonly float[] fftBuffer;
         private int fftPos;
+
+        // reusable working buffers to avoid per-FFT allocations
+        private Complex[] complex;
+        private double[] magnitudes;
+        private float[] bandLevels;
+        private float[] outLevels;
+        private double[] lower;
+        private double[] upper;
+        private float[] window;
 
         public event EventHandler<FrameEventArgs>? FftCalculated;
 
@@ -21,6 +31,36 @@ namespace Mp3Player.Audio
             this.fftLength = fftLength;
             fftBuffer = new float[fftLength];
             this.WaveFormat = source.WaveFormat;
+
+            // allocate reusable buffers
+            complex = new Complex[fftLength];
+            magnitudes = new double[fftLength / 2];
+
+            var bandCenters = EqualizerSampleProvider.Frequencies;
+            int bands = bandCenters.Length;
+            bandLevels = new float[bands];
+            outLevels = new float[bands];
+            lower = new double[bands];
+            upper = new double[bands];
+
+            // precompute Hamming window
+            window = new float[fftLength];
+            for (int i = 0; i < fftLength; i++)
+            {
+                window[i] = (float)(0.54 - 0.46 * Math.Cos(2 * Math.PI * i / (fftLength - 1)));
+            }
+
+            // compute band boundaries once (based on frequencies)
+            double[] bandCentersD = new double[bandCenters.Length];
+            for (int i = 0; i < bandCenters.Length; i++) bandCentersD[i] = bandCenters[i];
+            for (int b = 0; b < bands; b++)
+            {
+                double center = bandCentersD[b];
+                double prev = b == 0 ? center / Math.Sqrt(2) : bandCentersD[b - 1];
+                double next = b == bands - 1 ? center * Math.Sqrt(2) : bandCentersD[b + 1];
+                lower[b] = Math.Sqrt(prev * center);
+                upper[b] = Math.Sqrt(center * next);
+            }
         }
 
         public WaveFormat WaveFormat { get; }
@@ -42,19 +82,19 @@ namespace Mp3Player.Audio
                 fftBuffer[fftPos++] = sample;
                 if (fftPos >= fftLength)
                 {
-                    // perform FFT
-                    var complex = new Complex[fftLength];
-                    for (int i = 0; i < fftLength; i++)
+                    // perform FFT using preallocated buffers
+                    int fl = fftLength;
+                    for (int i = 0; i < fl; i++)
                     {
-                        // apply Hamming window
-                        double window = 0.54 - 0.46 * Math.Cos(2 * Math.PI * i / (fftLength - 1));
-                        complex[i].X = fftBuffer[i] * (float)window;
+                        complex[i].X = fftBuffer[i] * window[i];
                         complex[i].Y = 0f;
                     }
-                    FastFourierTransform.FFT(true, (int)Math.Log(fftLength, 2), complex);
+                    FastFourierTransform.FFT(true, (int)Math.Log(fl, 2), complex);
 
-                    int half = fftLength / 2;
-                    double[] magnitudes = new double[half];
+                    int half = fl / 2;
+                    double sampleRate = WaveFormat.SampleRate;
+
+                    // compute magnitudes
                     for (int i = 0; i < half; i++)
                     {
                         double re = complex[i].X;
@@ -62,28 +102,14 @@ namespace Mp3Player.Audio
                         magnitudes[i] = Math.Sqrt(re * re + im * im);
                     }
 
-                    // map magnitudes to the 31 bands defined in Equalizer.Frequencies
-                    var bandCenters = EqualizerSampleProvider.Frequencies;
-                    int bands = bandCenters.Length;
-                    float[] bandLevels = new float[bands];
+                    // reset bandLevels
+                    Array.Clear(bandLevels, 0, bandLevels.Length);
 
-                    double sampleRate = WaveFormat.SampleRate;
-                    // compute band boundaries using geometric mean
-                    double[] lower = new double[bands];
-                    double[] upper = new double[bands];
-                    for (int b = 0; b < bands; b++)
-                    {
-                        double center = bandCenters[b];
-                        double prev = b == 0 ? center / Math.Sqrt(2) : bandCenters[b - 1];
-                        double next = b == bands - 1 ? center * Math.Sqrt(2) : bandCenters[b + 1];
-                        lower[b] = Math.Sqrt(prev * center);
-                        upper[b] = Math.Sqrt(center * next);
-                    }
-
-                    // accumulate bin magnitudes into bands
+                    // accumulate bin magnitudes into bands using precomputed boundaries
+                    int bands = bandLevels.Length;
                     for (int k = 0; k < half; k++)
                     {
-                        double freq = k * sampleRate / fftLength;
+                        double freq = k * sampleRate / fl;
                         double mag = magnitudes[k];
                         for (int b = 0; b < bands; b++)
                         {
@@ -98,16 +124,14 @@ namespace Mp3Player.Audio
                     // normalize and convert to 0..1 (log-like scaling)
                     float max = 0f;
                     for (int b = 0; b < bands; b++) if (bandLevels[b] > max) max = bandLevels[b];
-                    var outLevels = new float[bands];
                     for (int b = 0; b < bands; b++)
                     {
                         double v = bandLevels[b];
                         if (max > 0) v /= max;
-                        // apply slight compression
                         outLevels[b] = (float)Math.Min(1.0, Math.Log10(1 + 9 * v));
                     }
 
-                    FftCalculated?.Invoke(this, new FrameEventArgs { Volumes = outLevels });
+                    FftCalculated?.Invoke(this, new FrameEventArgs { Volumes = (float[])outLevels.Clone() });
 
                     // reset
                     fftPos = 0;

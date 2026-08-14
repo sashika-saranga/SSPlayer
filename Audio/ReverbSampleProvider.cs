@@ -42,17 +42,29 @@ namespace Mp3Player.Audio
         public int Read(float[] bufferOut, int offset, int count)
         {
             int samplesRead = source.Read(bufferOut, offset, count);
-            int channels = WaveFormat.Channels;
+            if (samplesRead == 0) return 0;
+            int len = buffer.Length;
+            int idx = bufferPos;
+            // precompute tap offsets relative to bufferPos to avoid repeated arithmetic per sample
+            int taps = tapDecays.Length;
+            int[] tapOffsets = new int[taps];
+            for (int t = 0; t < taps; t++)
+            {
+                // ensure positive offset
+                int off = idx - tapDelays[t];
+                while (off < 0) off += len;
+                tapOffsets[t] = off % len;
+            }
+
             for (int n = 0; n < samplesRead; n++)
             {
                 int outIndex = offset + n;
                 float dry = bufferOut[outIndex];
                 float wetSum = 0f;
-                // sum taps
-                for (int t = 0; t < tapDecays.Length; t++)
+                // sum taps using precomputed offsets
+                for (int t = 0; t < taps; t++)
                 {
-                    int tapIndex = (bufferPos - tapDelays[t] + buffer.Length) % buffer.Length;
-                    wetSum += buffer[tapIndex] * tapDecays[t];
+                    wetSum += buffer[tapOffsets[t]] * tapDecays[t];
                 }
                 float outSample = dry + wetSum * level;
                 if (outSample > 1f) outSample = 1f;
@@ -60,9 +72,18 @@ namespace Mp3Player.Audio
                 bufferOut[outIndex] = outSample;
 
                 // write current sample into buffer with slight damping
-                buffer[bufferPos] = dry + wetSum * 0.5f;
-                bufferPos = (bufferPos + 1) % buffer.Length;
+                buffer[idx] = dry + wetSum * 0.5f;
+
+                // advance idx and tapOffsets
+                idx++;
+                if (idx >= len) idx = 0;
+                for (int t = 0; t < taps; t++)
+                {
+                    tapOffsets[t]++;
+                    if (tapOffsets[t] >= len) tapOffsets[t] = 0;
+                }
             }
+            bufferPos = idx;
             return samplesRead;
         }
 
