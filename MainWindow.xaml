@@ -6,38 +6,138 @@
         WindowStyle="None" ResizeMode="NoResize" Background="#1f1f1f" FontFamily="Courier New">
     <Window.Resources>
 
-        <!-- Big rectangular button with small oval indicator -->
+        <!-- Brushed metal background simulation (tile of thin lines) -->
+        <DrawingBrush x:Key="BrushedMetalBrush" TileMode="Tile" Viewport="0,0,24,24" ViewportUnits="Absolute" Viewbox="0,0,24,24" ViewboxUnits="Absolute" Stretch="Fill">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="#222222">
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,24,24" />
+                        </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                    <GeometryDrawing>
+                        <GeometryDrawing.Brush>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#1f1f1f" Offset="0" />
+                                <GradientStop Color="#2b2b2b" Offset="0.5" />
+                                <GradientStop Color="#1f1f1f" Offset="1" />
+                            </LinearGradientBrush>
+                        </GeometryDrawing.Brush>
+                        <GeometryDrawing.Geometry>
+                            <RectangleGeometry Rect="0,0,24,1" />
+                        </GeometryDrawing.Geometry>
+                        <GeometryDrawing.Pen>
+                            <Pen Thickness="1" Brush="#151515" />
+                        </GeometryDrawing.Pen>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <!-- Header brush to give a metallic sheen on group headers -->
+        <LinearGradientBrush x:Key="MetalHeaderBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#333333" Offset="0" />
+            <GradientStop Color="#222222" Offset="0.5" />
+            <GradientStop Color="#1a1a1a" Offset="1" />
+        </LinearGradientBrush>
+
+        <!-- LED glow effect resource used dynamically by styles -->
+        <DropShadowEffect x:Key="LedGlowEffect" Color="#88FF66" BlurRadius="12" ShadowDepth="0" Opacity="0.9" />
+
+        <!-- GroupBox header style with brushed metal background -->
+        <Style TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border BorderBrush="#444" BorderThickness="1" Background="{StaticResource BrushedMetalBrush}" CornerRadius="4" Padding="6" SnapsToDevicePixels="True">
+                            <DockPanel>
+                                <Border Background="{StaticResource MetalHeaderBrush}" DockPanel.Dock="Top" CornerRadius="3" Padding="6" Margin="0,0,0,6">
+                                    <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+                                </Border>
+                                <ContentPresenter />
+                            </DockPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Big rectangular button with small oval indicator - refined for retro HiFi look -->
         <Style x:Key="BigButtonStyle" TargetType="Button">
             <Setter Property="Width" Value="100" />
             <Setter Property="Height" Value="48" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#F7F7E8" />
+            <Setter Property="Padding" Value="6,4" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="border" Background="#555" CornerRadius="4" BorderBrush="#111" BorderThickness="1">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                            <Border x:Name="border" CornerRadius="6" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#2B2B2B" Offset="0" />
+                                        <GradientStop Color="#121212" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#666" Offset="0" />
+                                        <GradientStop Color="#111" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                                <Grid Margin="8,4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
 
-        <!-- Corner thumbs removed from resources; define in Window content if needed -->
-                            <Ellipse x:Name="Indicator" Width="12" Height="8" Fill="#224422" Stroke="#001100" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" />
+                            <!-- small indicator LED -->
+                            <Ellipse x:Name="Indicator" Width="12" Height="8" Fill="#223322" Stroke="#001100" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+
+                            <!-- subtle bevel/highlight overlay -->
+                            <Rectangle IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#FFFFFFFF" Offset="0" />
+                                        <GradientStop Color="#00FFFFFF" Offset="0.12" />
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                                <Rectangle.Opacity>0.06</Rectangle.Opacity>
+                            </Rectangle>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <!-- Only change the small indicator on hover; don't highlight the whole button -->
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#000000" BlurRadius="8" ShadowDepth="2" Opacity="0.35" />
+                                    </Setter.Value>
+                                </Setter>
                                 <Setter TargetName="Indicator" Property="Fill" Value="#558844" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <!-- Indicator lights brighter when pressed -->
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.985" ScaleY="0.985" />
+                                    </Setter.Value>
+                                </Setter>
                                 <Setter TargetName="Indicator" Property="Fill" Value="#88FF66" />
                             </Trigger>
-                            <!-- If indicator attached property is set, show bright indicator regardless of hover -->
                             <Trigger Property="local:IndicatorHelper.IsIndicatorOn" Value="True">
                                 <Setter TargetName="Indicator" Property="Fill" Value="#88FF66" />
+                                <Setter TargetName="Indicator" Property="Effect" Value="{StaticResource LedGlowEffect}" />
                                 <Trigger.EnterActions>
                                     <BeginStoryboard Name="PulseStoryboard">
                                         <Storyboard RepeatBehavior="Forever" AutoReverse="True">
                                             <DoubleAnimation Storyboard.TargetName="Indicator" Storyboard.TargetProperty="Opacity" From="0.6" To="1.0" Duration="0:0:0.8" />
+                                            <DoubleAnimation Storyboard.TargetName="Indicator" Storyboard.TargetProperty="RenderTransform.ScaleX" From="1.0" To="1.15" Duration="0:0:0.8" AutoReverse="True" />
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </Trigger.EnterActions>
@@ -46,7 +146,8 @@
                                 </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="border" Property="Opacity" Value="0.5" />
+                                <Setter TargetName="border" Property="Opacity" Value="0.45" />
+                                <Setter TargetName="Indicator" Property="Opacity" Value="0.35" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -54,19 +155,31 @@
             </Setter>
         </Style>
 
-        <!-- Monochrome display TextBox style -->
+        <!-- Monochrome display TextBox style (retro green CRT look) -->
         <Style x:Key="MonoDisplayTextBoxStyle" TargetType="TextBox">
-            <Setter Property="Background" Value="#A7F07B" />
-            <Setter Property="Foreground" Value="#001100" />
+            <Setter Property="Background" Value="#0b2a0b" />
+            <Setter Property="Foreground" Value="#A7F07B" />
             <Setter Property="FontFamily" Value="Consolas" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="BorderBrush" Value="#224400" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="4" />
-            <Setter Property="Height" Value="24" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="4,2" />
+                                <Rectangle IsHitTestVisible="False" Stroke="#113311" StrokeThickness="1" Opacity="0.12" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- Power button style (red indicator) -->
+        <!-- Power button style (red indicator) - compact variant of BigButtonStyle -->
         <Style x:Key="PowerButtonStyle" TargetType="Button" BasedOn="{StaticResource BigButtonStyle}">
             <Setter Property="Width" Value="48" />
             <Setter Property="Height" Value="32" />
@@ -74,20 +187,53 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Border x:Name="border" Background="#444" CornerRadius="4" BorderBrush="#111" BorderThickness="1">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="border" CornerRadius="5" BorderThickness="1" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#2A2A2A" Offset="0" />
+                                        <GradientStop Color="#111" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Border.BorderBrush>
+                                    <SolidColorBrush Color="#333" />
+                                </Border.BorderBrush>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,2" />
                             </Border>
-                            <Ellipse x:Name="Indicator" Width="10" Height="6" Fill="#442222" Stroke="#220000" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" />
+                            <Ellipse x:Name="Indicator" Width="10" Height="6" Fill="#442222" Stroke="#220000" StrokeThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,6,0" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#000000" BlurRadius="6" ShadowDepth="1" Opacity="0.25" />
+                                    </Setter.Value>
+                                </Setter>
                                 <Setter TargetName="Indicator" Property="Fill" Value="#884444" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="Indicator" Property="Fill" Value="#FF6666" />
+                                <Setter TargetName="border" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.99" ScaleY="0.99" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                             <Trigger Property="local:IndicatorHelper.IsIndicatorOn" Value="True">
                                 <Setter TargetName="Indicator" Property="Fill" Value="#FF4444" />
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetName="Indicator" Storyboard.TargetProperty="Opacity" From="0.6" To="1.0" Duration="0:0:0.6" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -95,13 +241,30 @@
             </Setter>
         </Style>
 
-        <!-- Slider thumb sizing for main sliders -->
+        <!-- Slider thumb sizing for main sliders (textured metal knob) -->
         <Style x:Key="LargeThumbStyle" TargetType="Thumb">
             <Setter Property="Width" Value="16" />
             <Setter Property="Height" Value="16" />
             <Setter Property="Background" Value="#ddd" />
             <Setter Property="BorderBrush" Value="#333" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Grid>
+                            <Border CornerRadius="3" BorderThickness="1" BorderBrush="#333">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#E6E6E6" Offset="0" />
+                                        <GradientStop Color="#BBBBBB" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                            </Border>
+                            <Rectangle Margin="2" RadiusX="2" RadiusY="2" Stroke="#8A8A8A" Fill="#00000000" Opacity="0.12" IsHitTestVisible="False" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- Invisible corner resize grips -->
@@ -204,7 +367,11 @@
                     <StackPanel>
                     <Grid Margin="0,4">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
+                            <!-- playback controls -->
+                            <ColumnDefinition Width="Auto" />
+                            <!-- VU meters -->
+                            <ColumnDefinition Width="160" />
+                            <!-- volume and other right controls -->
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="0">
@@ -221,7 +388,87 @@
                                 <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
                             </StackPanel>
                         </UniformGrid>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,0,0">
+                <!-- VU meters (Left / Right) between playback and volume controls -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0">
+                    <!-- Left rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
+                    <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
+                        <Grid>
+                            <!-- canvas taller than visible rectangle so mount point can be below -->
+                            <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Canvas.Clip>
+                                    <RectangleGeometry Rect="6,6,68,44" />
+                                </Canvas.Clip>
+                                <!-- visible meter face (rectangle) positioned at top of canvas -->
+                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
+                                <!-- realistic backlight glow (warm) under needle, above face -->
+                                <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
+                                    <Ellipse.Fill>
+                                        <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
+                                            <GradientStop Color="#FFFFF4" Offset="0" />
+                                            <GradientStop Color="#FFF0D0" Offset="0.4" />
+                                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                                        </RadialGradientBrush>
+                                    </Ellipse.Fill>
+                                    <Ellipse.Effect>
+                                        <BlurEffect Radius="12" />
+                                    </Ellipse.Effect>
+                                </Ellipse>
+                                <!-- needle: pivot (mount) is below the visible rectangle at (40,56) and is not drawn -->
+                                <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
+                                    <Line.RenderTransform>
+                                        <RotateTransform x:Name="NeedleLeftRotate" Angle="-45" CenterX="40" CenterY="56" />
+                                    </Line.RenderTransform>
+                                </Line>
+                                <!-- static background VU scale (labels and ticks) -->
+                                <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                            </Canvas>
+                        </Grid>
+                    </Border>
+
+                    <!-- Right rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
+                    <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
+                        <Grid>
+                            <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Canvas.Clip>
+                                    <RectangleGeometry Rect="6,6,68,44" />
+                                </Canvas.Clip>
+                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
+                                <!-- realistic backlight glow (warm) under needle, above face -->
+                                <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
+                                    <Ellipse.Fill>
+                                        <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
+                                            <GradientStop Color="#FFFFF4" Offset="0" />
+                                            <GradientStop Color="#FFF0D0" Offset="0.4" />
+                                            <GradientStop Color="#00FFFFFF" Offset="1" />
+                                        </RadialGradientBrush>
+                                    </Ellipse.Fill>
+                                    <Ellipse.Effect>
+                                        <BlurEffect Radius="12" />
+                                    </Ellipse.Effect>
+                                </Ellipse>
+                                <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
+                                    <Line.RenderTransform>
+                                        <RotateTransform x:Name="NeedleRightRotate" Angle="-45" CenterX="40" CenterY="56" />
+                                    </Line.RenderTransform>
+                                </Line>
+                                <!-- static background VU scale (labels and ticks) -->
+                                <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                            </Canvas>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,0,0">
                     <TextBlock Text="Volume" VerticalAlignment="Center" Margin="8,0" Foreground="White" />
                     <Slider Name="SliderVolume" Minimum="0" Maximum="1" Value="0.8" Width="160" ValueChanged="SliderVolume_ValueChanged" Height="24">
                         <Slider.Resources>
@@ -277,51 +524,73 @@
                 <GroupBox Name="AudioSettingsGroup" Header="Audio Settings" Margin="0,8,0,0" Foreground="White">
                 <ScrollViewer Height="300">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="4" VerticalAlignment="Center">
-                            <StackPanel>
-                                <TextBlock Text="Equalizer" FontWeight="Bold" />
-                                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="200">
-                                    <StackPanel Orientation="Horizontal" Margin="0,4" HorizontalAlignment="Center">
-                                        <!-- 15 vertical band sliders -->
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band0" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="25 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band1" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="40 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band2" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="63 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band3" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="100 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band4" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="160 Hz" HorizontalAlignment="Center" /></StackPanel>
+                <!-- Reworked audio settings layout: EQ (3/4) on the left, Effects (1/4) on the right -->
+                <Grid Margin="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band5" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="250 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band6" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="400 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band7" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="630 Hz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band8" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1 kHz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band9" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1.6 kHz" HorizontalAlignment="Center" /></StackPanel>
-
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band10" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="2.5 kHz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band11" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="4 kHz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band12" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="6.3 kHz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band13" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="10 kHz" HorizontalAlignment="Center" /></StackPanel>
-                                        <StackPanel Margin="4" HorizontalAlignment="Center"><Slider Name="Band14" Orientation="Vertical" Height="140" Width="30" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="16 kHz" HorizontalAlignment="Center" /></StackPanel>
+                    <!-- EQ panel -->
+                    <Border Grid.Column="0" Padding="8" Margin="4" Background="#252525" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Equalizer" FontWeight="Bold" Foreground="White" />
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="200" Margin="0,6,0,0">
+                                <StackPanel Orientation="Horizontal" Margin="6" HorizontalAlignment="Center">
+                                    <StackPanel.Resources>
+                                        <!-- apply textured thumb to sliders inside EQ panel -->
+                                        <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
+                                    </StackPanel.Resources>
+                                    <!-- 15 vertical band sliders with textured thumbs -->
+                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                        <Slider Name="Band0" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                        <TextBlock Text="25 Hz" HorizontalAlignment="Center" Foreground="White" />
                                     </StackPanel>
-                                </ScrollViewer>
-                            </StackPanel>
-                        </StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                        <Slider Name="Band1" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                        <TextBlock Text="40 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                    </StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band2" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="63 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band3" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="100 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band4" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="160 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
 
-                        <StackPanel Orientation="Horizontal" Margin="4">
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Echo</Button>
-                                <Slider Name="SliderEcho" Minimum="0" Maximum="1" Value="0" Width="100" ValueChanged="SliderEcho_ValueChanged" IsEnabled="False" />
-                                <TextBlock Text="Echo" Foreground="White" HorizontalAlignment="Center" />
-                            </StackPanel>
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Reverb</Button>
-                                <Slider Name="SliderReverb" Minimum="0" Maximum="1" Value="0" Width="100" ValueChanged="SliderReverb_ValueChanged" IsEnabled="False" />
-                                <TextBlock Text="Reverb" Foreground="White" HorizontalAlignment="Center" />
-                            </StackPanel>
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Margin="6">Stereo</Button>
-                                <Slider Name="SliderStereo" Minimum="0" Maximum="2" Value="0" Width="100" ValueChanged="SliderStereo_ValueChanged" IsEnabled="False" />
-                                <TextBlock Text="Stereo" Foreground="White" HorizontalAlignment="Center" />
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band5" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="250 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band6" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="400 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band7" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="630 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band8" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band9" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1.6 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band10" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="2.5 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band11" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="4 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band12" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="6.3 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band13" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="10 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band14" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="16 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Effects panel -->
+                    <Border Grid.Column="1" Padding="8" Margin="4" Background="#222" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <TextBlock Text="Effects" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
+                            <StackPanel Orientation="Vertical" Margin="0,8,0,0">
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                    <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Echo</Button>
+                                    <Slider Name="SliderEcho" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderEcho_ValueChanged" IsEnabled="False" />
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                    <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Reverb</Button>
+                                    <Slider Name="SliderReverb" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderReverb_ValueChanged" IsEnabled="False" />
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                    <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Stereo</Button>
+                                    <Slider Name="SliderStereo" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderStereo_ValueChanged" IsEnabled="False" />
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
+                    </Border>
+                </Grid>
                     </StackPanel>
                 </ScrollViewer>
             </GroupBox>

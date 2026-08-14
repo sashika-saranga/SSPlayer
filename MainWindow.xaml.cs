@@ -508,6 +508,7 @@ namespace Mp3Player
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (e.Volumes == null) return;
+                AnimateNeedlesFromVolumes(e.Volumes);
                 int bands = EqualizerSampleProvider.Frequencies.Length; // match EQ band count
                 const int bulbsPerBand = 9; // 4 green, 3 amber, 2 red
                 const int greenCount = 4;
@@ -576,6 +577,51 @@ namespace Mp3Player
                     }
                 }
             }));
+        }
+
+        private void AnimateNeedlesFromVolumes(float[] volumes)
+        {
+            try
+            {
+                double leftLevel = volumes.Length > 0 ? Math.Max(0.0, Math.Min(1.0, volumes[0])) : 0.0;
+                double rightLevel = volumes.Length > 1 ? Math.Max(0.0, Math.Min(1.0, volumes[1])) : leftLevel;
+                double minAngle = -45.0;
+                double maxAngle = 45.0;
+                double leftAngle = minAngle + (maxAngle - minAngle) * leftLevel;
+                double rightAngle = minAngle + (maxAngle - minAngle) * rightLevel;
+
+                // prefer named RotateTransform on the parent Canvas
+                var rtL = this.FindName("NeedleLeftRotate") as RotateTransform;
+                var rtR = this.FindName("NeedleRightRotate") as RotateTransform;
+
+                // fallback: try to locate any element and use its RenderTransform
+                if (rtL == null)
+                {
+                    var el = this.FindName("NeedleLeft") as FrameworkElement;
+                    if (el?.RenderTransform is RotateTransform r) rtL = r;
+                }
+                if (rtR == null)
+                {
+                    var el = this.FindName("NeedleRight") as FrameworkElement;
+                    if (el?.RenderTransform is RotateTransform r) rtR = r;
+                }
+
+                if (rtL == null && rtR == null) return;
+
+                var daL = new System.Windows.Media.Animation.DoubleAnimation(leftAngle, TimeSpan.FromMilliseconds(120))
+                {
+                    EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                };
+                var daR = new System.Windows.Media.Animation.DoubleAnimation(rightAngle, TimeSpan.FromMilliseconds(120))
+                {
+                    EasingFunction = new System.Windows.Media.Animation.QuadraticEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut }
+                };
+
+                try { rtL?.BeginAnimation(RotateTransform.AngleProperty, daL); } catch { }
+                try { rtR?.BeginAnimation(RotateTransform.AngleProperty, daR); } catch { }
+                // static VU scale is drawn in XAML now; no dynamic label updates required
+            }
+            catch { }
         }
 
         private void UiTimer_Tick(object? sender, EventArgs e)

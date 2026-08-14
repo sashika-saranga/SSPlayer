@@ -23,8 +23,9 @@ namespace Mp3Player.Audio
         private readonly object lockObj = new object();
 
         public float[] EqGains { get; private set; } = new float[15];
-
         public event EventHandler<FrameEventArgs>? SampleFramesAvailable;
+        // forwards per-channel peak levels (from MeteringSampleProvider.StreamVolume)
+        public event EventHandler<float[]>? StreamVolumeAvailable;
         // Raised when playback naturally reaches the end of a file
         public event EventHandler? PlaybackEnded;
 
@@ -54,8 +55,11 @@ namespace Mp3Player.Audio
             var metering = new MeteringSampleProvider(aggregator);
             metering.StreamVolume += (s, a) =>
             {
-                // keep peak values as well (not used for band mapping)
-                // ignore here to avoid duplicate events
+                try
+                {
+                    StreamVolumeAvailable?.Invoke(this, a.MaxSampleValues ?? new float[0]);
+                }
+                catch { }
             };
 
             finalSampleProvider = metering;
