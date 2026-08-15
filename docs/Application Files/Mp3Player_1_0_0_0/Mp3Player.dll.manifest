@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asmv1:assembly xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" manifestVersion="1.0" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:co.v2="urn:schemas-microsoft-com:clickonce.v2">
+  <asmv1:assemblyIdentity name="Mp3Player.exe" version="1.0.0.0" publicKeyToken="4c413297774d5ec7" language="en" processorArchitecture="msil" type="win32" />
+  <description asmv2:iconFile="Images\icon.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
+  <application />
+  <entryPoint>
+    <assemblyIdentity name="Launcher" version="8.0.0.0" language="neutral" processorArchitecture="msil" />
+    <commandLine file="Launcher.exe" parameters="" />
+  </entryPoint>
+  <trustInfo>
+    <security>
+      <applicationRequestMinimum>
+        <PermissionSet Unrestricted="true" ID="Custom" SameSite="site" />
+        <defaultAssemblyRequest permissionSetReference="Custom" />
+      </applicationRequestMinimum>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!--
+          UAC Manifest Options
+          If you want to change the Windows User Account Control level replace the
+          requestedExecutionLevel node with one of the following.
+
+        <requestedExecutionLevel  level="asInvoker" uiAccess="false" />
+        <requestedExecutionLevel  level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel  level="highestAvailable" uiAccess="false" />
+
+         If you want to utilize File and Registry Virtualization for backward
+         compatibility then delete the requestedExecutionLevel node.
+    -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentOS>
+      <osVersionInfo>
+        <os majorVersion="5" minorVersion="1" buildNumber="2600" servicePackMajor="0" />
+      </osVersionInfo>
+    </dependentOS>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Windows.CommonLanguageRuntime" version="4.0.30319.0" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Launcher.exe" size="17768">
+      <assemblyIdentity name="Launcher" version="8.0.0.0" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+        <dsig:DigestValue>EtaavX0Odm/DU8HNq/iI+PGv4CJQoU/xyn7ZklsEcDY=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <file name="Images\icon.ico" size="270398">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>vMStrUc5712003TCETLjgg+ARaFqJjvjNO9/Nyq7lJQ=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Mp3Player.deps.json" size="4704">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>Rz+aN3a9iDKpeFKbyWOLT61OROmTBRskV0JXlNHulLI=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Mp3Player.dll" size="344936">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>IYNx25SFdWJ8twrE6r2F2qt4u/zQ2pyUIykKDKT6pSg=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Mp3Player.exe" size="423272">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>sRAqtvGjU+EMKLu4vH7a13yC9QHMBr14Kd98tBjG9cg=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Mp3Player.runtimeconfig.json" size="372">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>HsoPDHAHCqg7tgnkt0mybctECXhDJgMnJjlHIiJKCYo=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.Asio.dll" size="34304">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>XoeTXIE7f5LTWIcVQWNpGAELRjhM2gOoKHLVp+la+K0=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.Core.dll" size="188416">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>8pfijHBh5ClPxlpr4WKdlRsElpUPAGDJGf2fMF8nqpE=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.Midi.dll" size="46592">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>DitZomo0MtzHEFARgJ6kKNEa4GBGxk3P5Hcmg//urJk=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.Wasapi.dll" size="173568">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>wl5cBpTccJxy/gEYLbXM/qkin2W8feqpsCmCNMhKj8g=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.WinForms.dll" size="34304">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>5+cz0CNXA87B/J/0i70cx3J3QnJFACBQzUJt5S69JH0=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.WinMM.dll" size="57344">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>M/cCVU5l6ygs79axhf//5do6Nmr4O6AxVTWrT8+zKRw=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="NAudio.dll" size="7680">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
+      <dsig:DigestValue>v8dys+lOYOcfp6VG01WlGGmKUb/5xfi48XbhJEkNXf4=</dsig:DigestValue>
+    </hash>
+  </file>
+<publisherIdentity name="CN=GSN\sashi" issuerKeyHash="9224b9a8059332ab6cb1dd91718baf83757a63b5" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha256" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" /><DigestValue>HR+LXSM+5Lw5drBlQhGYU31HOMmY0eFI23Y4tnmYJCg=</DigestValue></Reference></SignedInfo><SignatureValue>lnqYWXM0bmYWBpdvyIhyyituoqTiQ36WezI5NIFNbDOanqiOBKEAKywSbABORezb9tZSklsfm5QTrVJCgp0iGizBfsXf22kgEhcxYXxbdgiz3i/QV1M9h96YLO09qLyrZ6Mya1yYXUYK8pKXKhi+W482ysV+/eYtaJH7AVSrd97CLASLdSFKidJ1po0V5G7iYy1bqxza0uswjGUtfCeTO3Kd+wFKbnqMqYRGQDMMLD87d/m1RaZiVMbazTLPmIlv7qYnLBdzYO0LqIMT9O0W9Vws8rcIDiBuRm13/R/Em5CRK72GRIPqSbWNKG19xbzr5rN8a1WpijSqATlhT+nRiQ==</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>rZCr1GqWy6spI3IaR+NkPgUPjNdzRw7YZiaf/3WIa291RkPHI0BALlXrDDLUIdUlfkSVsj8vzmNWJZm7giBh1PL/ZelmIMZ/N+S8VD9FnTjFK8cLwswa1kN9IEtYowsQdHNFYqiJUMTpsIo6d0Yuquo6uGB+X0z5IQvdYs3DGXc0RQRhZL7rJCDmEtvtAqa4WZC61TLlMf/EmpmAe75r3rgasAjGMEN/kcV8Mv661V7FFw3nJ19na880VQvnVWWKwDJ9t1gPLujhk1z0Kdj6K+1axvDnP7GjD6IlNisV4e544F/4mPLB+F+MtOgoU8lyjr/ecdsYoP4fR+vGeabYCQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="28249879b63876db48e1d198c938477d5398114265b07639bce43e235d8b1f1d" Description="" Url=""><as:assemblyIdentity name="Mp3Player.exe" version="1.0.0.0" publicKeyToken="4c413297774d5ec7" language="en" processorArchitecture="msil" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=GSN\sashi</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha256" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" /><DigestValue>hPxsvQn4KVc6ZDVnywj26jkfa0OzWiXdbNJf85W2XmY=</DigestValue></Reference></SignedInfo><SignatureValue>fYhPuRe9XR4Ju7Ku5f2WfXtvitGgyohZizE7sGoy+pvnIy292A0tNWyXnS9hTB2/4Y4QHgdLlfxA8H3/6eXh4sGJs/koB3BLxzCxxgMHViCOs6cFNrFBwlXdVP/KB0uezR2IMuN9hLoNTmldFeVW4tfXZCZ71xogt/QfAZZRdIyn60PnifxnUZY20NcKnqNgK3f34QI3q0ZdRB9UwOyB1KsPiAF+3tZEogvF5RFPm0IDaQkDVjh8YrwCVScWcmEzjNuJAXwTerkOsUS4JDof9IG0Ay7+XoGJLZoQijXGZM21OKGKcFeNy2zE2PDvapTWPLqC/7f8dPZ5EyiItvUxKg==</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>rZCr1GqWy6spI3IaR+NkPgUPjNdzRw7YZiaf/3WIa291RkPHI0BALlXrDDLUIdUlfkSVsj8vzmNWJZm7giBh1PL/ZelmIMZ/N+S8VD9FnTjFK8cLwswa1kN9IEtYowsQdHNFYqiJUMTpsIo6d0Yuquo6uGB+X0z5IQvdYs3DGXc0RQRhZL7rJCDmEtvtAqa4WZC61TLlMf/EmpmAe75r3rgasAjGMEN/kcV8Mv661V7FFw3nJ19na880VQvnVWWKwDJ9t1gPLujhk1z0Kdj6K+1axvDnP7GjD6IlNisV4e544F/4mPLB+F+MtOgoU8lyjr/ecdsYoP4fR+vGeabYCQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIC9DCCAdygAwIBAgIIJrUQEjHza04wDQYJKoZIhvcNAQELBQAwHTEbMBkGA1UEAx4SAEcAUwBOAFwAcwBhAHMAaABpMB4XDTI2MDgxNTE5MDMxN1oXDTI2MDgyMjE5MDMxN1owHTEbMBkGA1UEAx4SAEcAUwBOAFwAcwBhAHMAaABpMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArZCr1GqWy6spI3IaR+NkPgUPjNdzRw7YZiaf/3WIa291RkPHI0BALlXrDDLUIdUlfkSVsj8vzmNWJZm7giBh1PL/ZelmIMZ/N+S8VD9FnTjFK8cLwswa1kN9IEtYowsQdHNFYqiJUMTpsIo6d0Yuquo6uGB+X0z5IQvdYs3DGXc0RQRhZL7rJCDmEtvtAqa4WZC61TLlMf/EmpmAe75r3rgasAjGMEN/kcV8Mv661V7FFw3nJ19na880VQvnVWWKwDJ9t1gPLujhk1z0Kdj6K+1axvDnP7GjD6IlNisV4e544F/4mPLB+F+MtOgoU8lyjr/ecdsYoP4fR+vGeabYCQIDAQABozgwNjAMBgNVHRMBAf8EAjAAMA4GA1UdDwEB/wQEAwIHgDAWBgNVHSUBAf8EDDAKBggrBgEFBQcDAzANBgkqhkiG9w0BAQsFAAOCAQEAlDp/MoDzRdWC2+NzWgG6SHUxWsz4WnE2BTIu4OUUqraAwcvs+aoDCcDFRJc3zx3OAuV9NTE/W6qTkzEgCD44G46627jjUcmn1LoqqWM9wSGniDuCq07qFUZdelVpEsD1e75oBjpsT7z6b1bnXBXKbzHmwVdSGt/cGxTZRdviBf/gtdmp6/DwZdnqD4zceCiyFsb5n4zt1Bl/+H0YtD1RpeEzXtWcnlJzj5vIHM/paLQMrShLrChbBZIV5kaRGlR6ekwNbjZ9L83KLthF3ISiCTkacB85zT5/kZeV+lDku0tae/vp7sGA2Mw/IGxQwNnk3CQpxRMbZ/G26cu4qTAEkA==</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>
