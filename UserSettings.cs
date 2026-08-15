@@ -12,5 +12,9 @@ namespace Mp3Player
         public bool ReverbEnabled { get; set; } = false;
         public float StereoLevel { get; set; } = 0f;
         public bool StereoEnabled { get; set; } = false;
+        public float BassLevel { get; set; } = 0f;
+        public bool BassEnabled { get; set; } = false;
+        public float TrebleLevel { get; set; } = 0f;
+        public bool TrebleEnabled { get; set; } = false;
     }
 }

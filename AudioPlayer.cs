@@ -16,6 +16,7 @@ namespace Mp3Player.Audio
         private AudioFileReader? audioFileReader;
         private ISampleProvider? finalSampleProvider;
         private EqualizerSampleProvider? equalizer;
+        private BassTrebleSampleProvider? bassTreble;
         private EchoSampleProvider? echo;
         private ReverbSampleProvider? reverb;
         private StereoWidenSampleProvider? stereo;
@@ -26,6 +27,7 @@ namespace Mp3Player.Audio
         public event EventHandler<FrameEventArgs>? SampleFramesAvailable;
         // forwards per-channel peak levels (from MeteringSampleProvider.StreamVolume)
         public event EventHandler<float[]>? StreamVolumeAvailable;
+        public event EventHandler<bool>? ClippingChanged;
         // Raised when playback naturally reaches the end of a file
         public event EventHandler? PlaybackEnded;
 
@@ -42,8 +44,15 @@ namespace Mp3Player.Audio
             // build processing chain: equalizer -> aggregator (FFT) -> metering -> output
             equalizer = new EqualizerSampleProvider(audioFileReader.ToSampleProvider(), EqGains);
 
+            // add bass/treble processing after EQ
+            bassTreble = new BassTrebleSampleProvider(equalizer);
+            bassTreble.SetBassLevel(bassLevel);
+            bassTreble.EnableBass(bassEnabled);
+            bassTreble.SetTrebleLevel(trebleLevel);
+            bassTreble.EnableTreble(trebleEnabled);
+
             // add echo and reverb in chain
-            echo = new EchoSampleProvider(equalizer, echoLevel);
+            echo = new EchoSampleProvider(bassTreble, echoLevel);
             reverb = new ReverbSampleProvider(echo, reverbLevel);
             stereo = new StereoWidenSampleProvider(reverb, stereoLevel);
 
@@ -62,7 +71,11 @@ namespace Mp3Player.Audio
                 catch { }
             };
 
-            finalSampleProvider = metering;
+            // wrap with clipping detector and forward clipping events
+            var clipDetector = new ClippingDetectorSampleProvider(metering);
+            clipDetector.ClippingChanged += (s, isClipping) => { try { ClippingChanged?.Invoke(this, isClipping); } catch { } };
+
+            finalSampleProvider = clipDetector;
 
             outputDevice = new WaveOutEvent();
             outputDevice.Init(finalSampleProvider.ToWaveProvider());
@@ -158,6 +171,10 @@ namespace Mp3Player.Audio
         private float echoLevel = 0f;
         private float reverbLevel = 0f;
         private float stereoLevel = 0f;
+        private float bassLevel = 0f;
+        private float trebleLevel = 0f;
+        private bool bassEnabled = false;
+        private bool trebleEnabled = false;
         private bool echoEnabled = false;
         private bool reverbEnabled = false;
         private bool stereoEnabled = false;
@@ -168,6 +185,24 @@ namespace Mp3Player.Audio
             if (echo != null)
             {
                 echo.SetLevel(level);
+            }
+        }
+
+        public void UpdateBassLevel(float level)
+        {
+            bassLevel = level;
+            if (bassTreble != null)
+            {
+                bassTreble.SetBassLevel(level);
+            }
+        }
+
+        public void UpdateTrebleLevel(float level)
+        {
+            trebleLevel = level;
+            if (bassTreble != null)
+            {
+                bassTreble.SetTrebleLevel(level);
             }
         }
 
@@ -204,6 +239,24 @@ namespace Mp3Player.Audio
             if (reverb != null)
             {
                 reverb.SetLevel(enable ? reverbLevel : 0f);
+            }
+        }
+
+        public void EnableBass(bool enable)
+        {
+            bassEnabled = enable;
+            if (bassTreble != null)
+            {
+                bassTreble.EnableBass(enable);
+            }
+        }
+
+        public void EnableTreble(bool enable)
+        {
+            trebleEnabled = enable;
+            if (bassTreble != null)
+            {
+                bassTreble.EnableTreble(enable);
             }
         }
 

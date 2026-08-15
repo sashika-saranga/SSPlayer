@@ -80,6 +80,8 @@ namespace Mp3Player
             SliderEcho.Value = userSettings.EchoLevel;
             SliderReverb.Value = userSettings.ReverbLevel;
             SliderStereo.Value = userSettings.StereoLevel;
+            SliderBass.Value = userSettings.BassLevel;
+            SliderTreble.Value = userSettings.TrebleLevel;
             // set EQ bands
             try
             {
@@ -98,6 +100,8 @@ namespace Mp3Player
             player.UpdateEchoLevel(userSettings.EchoLevel);
             player.UpdateReverbLevel(userSettings.ReverbLevel);
             player.UpdateStereoLevel(userSettings.StereoLevel);
+            player.UpdateBassLevel(userSettings.BassLevel);
+            player.UpdateTrebleLevel(userSettings.TrebleLevel);
             // enable effects state
             IndicatorHelper.SetIsIndicatorOn(BtnEcho, userSettings.EchoEnabled);
             SliderEcho.IsEnabled = userSettings.EchoEnabled;
@@ -108,6 +112,16 @@ namespace Mp3Player
             IndicatorHelper.SetIsIndicatorOn(BtnStereo, userSettings.StereoEnabled);
             SliderStereo.IsEnabled = userSettings.StereoEnabled;
             player.EnableStereo(userSettings.StereoEnabled);
+            // bass/treble UI state (use buttons as effect toggles)
+            IndicatorHelper.SetIsIndicatorOn(BtnBass, userSettings.BassEnabled);
+            SliderBass.IsEnabled = userSettings.BassEnabled;
+            player.EnableBass(userSettings.BassEnabled);
+            IndicatorHelper.SetIsIndicatorOn(BtnTreble, userSettings.TrebleEnabled);
+            SliderTreble.IsEnabled = userSettings.TrebleEnabled;
+            player.EnableTreble(userSettings.TrebleEnabled);
+
+            // clipping indicator subscription
+            player.ClippingChanged += Player_ClippingChanged;
 
             // schedule settings save timer (debounce)
             settingsSaveTimer.Interval = TimeSpan.FromSeconds(5);
@@ -149,6 +163,46 @@ namespace Mp3Player
                         item.ClearValue(ListBoxItem.ForegroundProperty);
                     }
                 }
+            }
+            catch { }
+        }
+
+        private void Player_ClippingChanged(object? sender, bool isClipping)
+        {
+            try
+            {
+                this.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        var el = this.FindName("ClipIndicator") as System.Windows.Shapes.Ellipse;
+                        if (el == null) return;
+                        if (isClipping)
+                        {
+                            try
+                            {
+                                var onBrush = this.FindResource("LedOnBrushRed") as System.Windows.Media.Brush;
+                                var glow = this.FindResource("LedGlowEffectRed") as System.Windows.Media.Effects.Effect;
+                                if (onBrush != null) el.Fill = onBrush;
+                                el.Effect = glow;
+                                el.Opacity = 1.0; // fully visible when lit
+                            }
+                            catch { /* fallback handled below */ }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                var offBrush = this.FindResource("LedOffBrushRed") as System.Windows.Media.Brush;
+                                if (offBrush != null) el.Fill = offBrush;
+                                el.Effect = null;
+                                el.Opacity = 0.18; // dim but present to avoid layout shift
+                            }
+                            catch { /* ignore */ }
+                        }
+                    }
+                    catch { }
+                }));
             }
             catch { }
         }
@@ -203,6 +257,29 @@ namespace Mp3Player
             }
             catch { }
         }
+
+        private void SliderBass_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                player.UpdateBassLevel((float)e.NewValue);
+                userSettings.BassLevel = (float)e.NewValue;
+                ScheduleSettingsSave();
+            }
+            catch { }
+        }
+
+        private void SliderTreble_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                player.UpdateTrebleLevel((float)e.NewValue);
+                userSettings.TrebleLevel = (float)e.NewValue;
+                ScheduleSettingsSave();
+            }
+            catch { }
+        }
+
 
         private void Player_PlaybackEnded(object? sender, EventArgs e)
         {
@@ -402,13 +479,15 @@ namespace Mp3Player
             {
                 if (!isMaximized)
                 {
+                    // Use WindowState for maximizing to let WPF arrange layout correctly
                     prevLeft = this.Left; prevTop = this.Top; prevWidth = this.Width; prevHeight = this.Height;
-                    var wa = SystemParameters.WorkArea;
-                    this.Left = wa.Left; this.Top = wa.Top; this.Width = wa.Width; this.Height = wa.Height;
+                    this.WindowState = WindowState.Maximized;
                     isMaximized = true;
                 }
                 else
                 {
+                    this.WindowState = WindowState.Normal;
+                    // restore previous position/size
                     this.Left = prevLeft; this.Top = prevTop; this.Width = prevWidth; this.Height = prevHeight;
                     isMaximized = false;
                 }
@@ -685,8 +764,19 @@ namespace Mp3Player
         private void LoadTracks(string folder)
         {
             tracks.Clear();
-            var files = Directory.GetFiles(folder, "*.mp3").OrderBy(f => f).ToArray();
-            tracks.AddRange(files);
+        IEnumerable<string> filesEnumerable;
+        try
+        {
+            // include mp3 files in folder and all subfolders
+            filesEnumerable = Directory.EnumerateFiles(folder, "*.mp3", SearchOption.AllDirectories);
+        }
+        catch (Exception)
+        {
+            // if access to some subfolders is denied, fall back to top-level only
+            filesEnumerable = Directory.EnumerateFiles(folder, "*.mp3", SearchOption.TopDirectoryOnly);
+        }
+        var files = filesEnumerable.OrderBy(f => f).ToArray();
+        tracks.AddRange(files);
             ListTracks.ItemsSource = tracks.Select(f => System.IO.Path.GetFileName(f));
             currentIndex = -1;
             UpdatePowerIndicator();
@@ -1007,7 +1097,7 @@ namespace Mp3Player
         private void MarqueeTimer_Tick(object? sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(currentTrackFullName)) return;
-            int displayLen = 30;
+            int displayLen = 60;
             if (currentTrackFullName.Length <= displayLen)
             {
                 TxtTrackName.Text = currentTrackFullName;
@@ -1082,6 +1172,22 @@ namespace Mp3Player
                     SliderStereo.IsEnabled = newEnabled;
                     player.EnableStereo(newEnabled);
                     userSettings.StereoEnabled = newEnabled;
+                    ScheduleSettingsSave();
+                }
+                else if (btn == BtnBass)
+                {
+                    bool newEnabled = !current;
+                    SliderBass.IsEnabled = newEnabled;
+                    player.EnableBass(newEnabled);
+                    userSettings.BassEnabled = newEnabled;
+                    ScheduleSettingsSave();
+                }
+                else if (btn == BtnTreble)
+                {
+                    bool newEnabled = !current;
+                    SliderTreble.IsEnabled = newEnabled;
+                    player.EnableTreble(newEnabled);
+                    userSettings.TrebleEnabled = newEnabled;
                     ScheduleSettingsSave();
                 }
                 // TODO: wire these flags into audio pipeline when implemented

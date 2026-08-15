@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Mp3Player"
-        Title="MP3 Player" Height="720" Width="1000"
+        Title="MP3 Player" Height="839" Width="1202"
         WindowStyle="None" ResizeMode="NoResize" Background="#1f1f1f" FontFamily="Courier New">
     <Window.Resources>
 
@@ -43,6 +43,20 @@
 
         <!-- LED glow effect resource used dynamically by styles -->
         <DropShadowEffect x:Key="LedGlowEffect" Color="#88FF66" BlurRadius="12" ShadowDepth="0" Opacity="0.9" />
+        <!-- red LED glow for clipping indicator -->
+        <DropShadowEffect x:Key="LedGlowEffectRed" Color="#FF4444" BlurRadius="14" ShadowDepth="0" Opacity="0.9" />
+
+        <RadialGradientBrush x:Key="LedOffBrushRed" GradientOrigin="0.35,0.35" Center="0.4,0.4">
+            <GradientStop Color="#220000" Offset="0" />
+            <GradientStop Color="#330000" Offset="0.6" />
+            <GradientStop Color="#000000" Offset="1" />
+        </RadialGradientBrush>
+
+        <RadialGradientBrush x:Key="LedOnBrushRed" GradientOrigin="0.35,0.35" Center="0.4,0.4">
+            <GradientStop Color="#FF6666" Offset="0" />
+            <GradientStop Color="#FF2222" Offset="0.7" />
+            <GradientStop Color="#440000" Offset="1" />
+        </RadialGradientBrush>
 
         <!-- GroupBox header style with brushed metal background -->
         <Style TargetType="GroupBox">
@@ -294,314 +308,381 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <Grid>
-    <Grid x:Name="RootGrid" Margin="10">
+    <Grid Margin="0">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
-            <ColumnDefinition Width="*" />
-            <!-- start collapsed (width 0) so right panel doesn't appear empty on first open -->
-            <ColumnDefinition Width="0" />
+            <ColumnDefinition Width="215*"/>
+            <ColumnDefinition Width="1229*"/>
         </Grid.ColumnDefinitions>
+        <Grid x:Name="RootGrid" Margin="10" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="*" />
+                <!-- start collapsed (width 0) so right panel doesn't appear empty on first open -->
+                <ColumnDefinition Width="0" />
+            </Grid.ColumnDefinitions>
 
-        <!-- Track list -->
-        <GroupBox Header="Track List" Grid.Column="0" Margin="4">
-            <DockPanel>
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
-                    <Button Name="BtnSelectFolder" Click="BtnSelectFolder_Click" Width="120">Select Folder</Button>
-                    <TextBlock Name="TxtFolder" Margin="8,4" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <!-- Track list -->
+            <GroupBox Header="Track List" Grid.Column="0" Margin="4" Foreground="White">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
+                        <Button Name="BtnSelectFolder" Click="BtnSelectFolder_Click" Width="120">Select Folder</Button>
+                        <TextBlock Name="TxtFolder" Margin="8,4" VerticalAlignment="Center" TextWrapping="Wrap" />
 
-                </StackPanel>
-                <ListBox Name="ListTracks" Margin="4" MouseDoubleClick="ListTracks_MouseDoubleClick" SelectionChanged="ListTracks_SelectionChanged" ItemContainerStyle="{StaticResource TrackListItemStyle}" />
-            </DockPanel>
-        </GroupBox>
+                    </StackPanel>
+                    <ListBox Name="ListTracks" Margin="4" MouseDoubleClick="ListTracks_MouseDoubleClick" SelectionChanged="ListTracks_SelectionChanged" ItemContainerStyle="{StaticResource TrackListItemStyle}" />
+                </DockPanel>
+            </GroupBox>
 
-        <!-- Player and visualizer -->
-        <!-- Title bar / drag area around main player -->
-        <Border Grid.Column="1" Margin="8" Background="#222" CornerRadius="6" Padding="6" x:Name="TitleBar" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-                <TextBlock Text="Retro HiFi" Foreground="#A7F07B" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <!-- decorative LEDs -->
-                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
-                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
-                    <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+            <!-- Player and visualizer -->
+            <!-- Title bar / drag area around main player -->
+            <Border Grid.Column="1" Margin="8" Background="#222" CornerRadius="6" Padding="6" x:Name="TitleBar" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                    <TextBlock Text="Retro HiFi" Foreground="#A7F07B" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <!-- decorative LEDs -->
+                        <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                        <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                        <Ellipse Width="8" Height="6" Fill="#113311" Stroke="#002200" Margin="6,0" />
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
-        </Border>
-        <!-- Right-side Manage Audio Files panel -->
-        <GroupBox Name="ManageAudioGroup" Header="Manage Audio Files" Grid.Column="2" Margin="4" Visibility="Collapsed">
-            <StackPanel Margin="6">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <CheckBox Name="RbEnableManage" Content="Enable Manage Mode" Checked="RbEnableManage_Checked" Unchecked="RbEnableManage_Unchecked" />
-                    <TextBlock Name="TxtManageWarning" Foreground="DarkRed" Margin="8,0,0,0" Visibility="Collapsed">Warning: enabling will allow permanent file operations</TextBlock>
-                </StackPanel>
+            </Border>
+            <!-- Right-side Manage Audio Files panel -->
+            <GroupBox Name="ManageAudioGroup" Header="Manage Audio Files" Grid.Column="2" Margin="4" Visibility="Collapsed" Foreground="White">
                 <StackPanel Margin="6">
-                    <TextBlock Text="Selected file:" FontWeight="Bold" />
-                    <TextBlock Name="TxtSelectedFile" Text="(none)" Margin="0,4" />
-                    <StackPanel Orientation="Horizontal" Margin="0,6">
-                        <Button Name="BtnRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" IsEnabled="False">Rename</Button>
-                        <Button Name="BtnDelete" Click="BtnDelete_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0" IsEnabled="False">Delete</Button>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <CheckBox Name="RbEnableManage" Content="Enable Manage Mode" Foreground="White" Checked="RbEnableManage_Checked" Unchecked="RbEnableManage_Unchecked" />
+                        <TextBlock Name="TxtManageWarning" Foreground="DarkRed" Margin="8,0,0,0" Visibility="Collapsed">Warning: enabling will allow permanent file operations</TextBlock>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,6">
-                        <TextBox Name="TxtRename" Width="180" IsEnabled="False" />
-                        <Button Name="BtnApplyRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0">Apply</Button>
+                    <StackPanel Margin="6">
+                        <TextBlock Text="Selected file:" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Name="TxtSelectedFile" Text="(none)" Margin="0,4" Foreground="White" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6">
+                            <Button Name="BtnRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" IsEnabled="False">Rename</Button>
+                            <Button Name="BtnDelete" Click="BtnDelete_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0" IsEnabled="False">Delete</Button>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6">
+                            <TextBox Name="TxtRename" Width="180" IsEnabled="False" Foreground="White" Background="#333" />
+                            <Button Name="BtnApplyRename" Click="BtnRename_Click" Style="{StaticResource BigButtonStyle}" Margin="6,0">Apply</Button>
+                        </StackPanel>
+                        <TextBlock Name="TxtMarkedNotice" Foreground="Yellow" Visibility="Collapsed" Margin="0,6" />
                     </StackPanel>
-                    <TextBlock Name="TxtMarkedNotice" Foreground="Yellow" Visibility="Collapsed" Margin="0,6" />
                 </StackPanel>
-            </StackPanel>
-        </GroupBox>
+            </GroupBox>
 
-        <Border Grid.Column="1" Margin="8" Background="#2b2b2b" Padding="8">
-            <StackPanel Orientation="Vertical">
-            <Grid Margin="0,0,0,6">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Button Name="BtnToggleList" Click="BtnToggleList_Click" Width="28" Height="28" HorizontalAlignment="Left" Grid.Column="0">☰</Button>
-                <Button Name="BtnToggleAudio" Click="BtnToggleAudio_Click" Width="28" Height="28" HorizontalAlignment="Right" Grid.Column="2">⚙</Button>
-            </Grid>
-            <Border x:Name="MainPlayerBorder" BorderBrush="Gray" BorderThickness="1" Padding="8" CornerRadius="4" MouseLeftButtonDown="MainPlayerBorder_MouseLeftButtonDown">
-                <Grid>
-                    <StackPanel>
-                    <Grid Margin="0,4">
+            <Border Grid.Column="1" Margin="8" Background="#2b2b2b" Padding="8">
+                <StackPanel Orientation="Vertical">
+                    <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
-                            <!-- playback controls -->
                             <ColumnDefinition Width="Auto" />
-                            <!-- VU meters -->
-                            <ColumnDefinition Width="160" />
-                            <!-- volume and other right controls -->
+                            <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="0">
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnPrev" Click="BtnPrev_Click" Margin="6">◀</Button>
-                                <TextBlock Text="Prev" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                            </StackPanel>
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnPlayPause" Click="BtnPlayPause_Click" Margin="6">Play</Button>
-                                <TextBlock Text="Play / Pause" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                            </StackPanel>
-                            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                <Button Style="{StaticResource BigButtonStyle}" Name="BtnNext" Click="BtnNext_Click" Margin="6">▶</Button>
-                                <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                            </StackPanel>
-                        </UniformGrid>
-                <!-- VU meters (Left / Right) between playback and volume controls -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0">
-                    <!-- Left rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
-                    <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
+                        <Button Name="BtnToggleList" Click="BtnToggleList_Click" Width="28" Height="28" HorizontalAlignment="Left" Grid.Column="0">☰</Button>
+                        <Button Name="BtnToggleAudio" Click="BtnToggleAudio_Click" Width="28" Height="28" HorizontalAlignment="Right" Grid.Column="2">⚙</Button>
+                    </Grid>
+                    <Border x:Name="MainPlayerBorder" BorderBrush="Gray" BorderThickness="1" Padding="8" CornerRadius="4" MouseLeftButtonDown="MainPlayerBorder_MouseLeftButtonDown">
                         <Grid>
-                            <!-- canvas taller than visible rectangle so mount point can be below -->
-                            <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Canvas.Clip>
-                                    <RectangleGeometry Rect="6,6,68,44" />
-                                </Canvas.Clip>
-                                <!-- visible meter face (rectangle) positioned at top of canvas -->
-                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
-                                <!-- realistic backlight glow (warm) under needle, above face -->
-                                <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
-                                    <Ellipse.Fill>
-                                        <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
-                                            <GradientStop Color="#FFFFF4" Offset="0" />
-                                            <GradientStop Color="#FFF0D0" Offset="0.4" />
-                                            <GradientStop Color="#00FFFFFF" Offset="1" />
-                                        </RadialGradientBrush>
-                                    </Ellipse.Fill>
-                                    <Ellipse.Effect>
-                                        <BlurEffect Radius="12" />
-                                    </Ellipse.Effect>
-                                </Ellipse>
-                                <!-- needle: pivot (mount) is below the visible rectangle at (40,56) and is not drawn -->
-                                <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
-                                    <Line.RenderTransform>
-                                        <RotateTransform x:Name="NeedleLeftRotate" Angle="-45" CenterX="40" CenterY="56" />
-                                    </Line.RenderTransform>
-                                </Line>
-                                <!-- static background VU scale (labels and ticks) -->
-                                <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                                <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                                <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                            </Canvas>
-                        </Grid>
-                    </Border>
+                            <StackPanel>
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <!-- playback controls -->
+                                        <ColumnDefinition Width="Auto" />
+                                        <!-- VU meters -->
+                                        <ColumnDefinition Width="160" />
+                                        <!-- volume and other right controls -->
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="0">
+                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnPrev" Click="BtnPrev_Click" Margin="6">◀</Button>
+                                            <TextBlock Text="Prev" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnPlayPause" Click="BtnPlayPause_Click" Margin="6">Play</Button>
+                                            <TextBlock Text="Play / Pause" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnNext" Click="BtnNext_Click" Margin="6">▶</Button>
+                                            <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <!-- VU meters (Left / Right) between playback and volume controls -->
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0">
+                                        <!-- Left rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
+                                        <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
+                                            <Grid>
+                                                <!-- canvas taller than visible rectangle so mount point can be below -->
+                                                <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Canvas.Clip>
+                                                        <RectangleGeometry Rect="6,6,68,44" />
+                                                    </Canvas.Clip>
+                                                    <!-- visible meter face (rectangle) positioned at top of canvas -->
+                                                    <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
+                                                    <!-- realistic backlight glow (warm) under needle, above face -->
+                                                    <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
+                                                        <Ellipse.Fill>
+                                                            <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
+                                                                <GradientStop Color="#FFFFF4" Offset="0" />
+                                                                <GradientStop Color="#FFF0D0" Offset="0.4" />
+                                                                <GradientStop Color="#00FFFFFF" Offset="1" />
+                                                            </RadialGradientBrush>
+                                                        </Ellipse.Fill>
+                                                        <Ellipse.Effect>
+                                                            <BlurEffect Radius="12" />
+                                                        </Ellipse.Effect>
+                                                    </Ellipse>
+                                                    <!-- needle: pivot (mount) is below the visible rectangle at (40,56) and is not drawn -->
+                                                    <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
+                                                        <Line.RenderTransform>
+                                                            <RotateTransform x:Name="NeedleLeftRotate" Angle="-45" CenterX="40" CenterY="56" />
+                                                        </Line.RenderTransform>
+                                                    </Line>
+                                                    <!-- static background VU scale (labels and ticks) -->
+                                                    <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                    <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                    <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                </Canvas>
+                                            </Grid>
+                                        </Border>
 
-                    <!-- Right rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
-                    <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
-                        <Grid>
-                            <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Canvas.Clip>
-                                    <RectangleGeometry Rect="6,6,68,44" />
-                                </Canvas.Clip>
-                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
-                                <!-- realistic backlight glow (warm) under needle, above face -->
-                                <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
-                                    <Ellipse.Fill>
-                                        <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
-                                            <GradientStop Color="#FFFFF4" Offset="0" />
-                                            <GradientStop Color="#FFF0D0" Offset="0.4" />
-                                            <GradientStop Color="#00FFFFFF" Offset="1" />
-                                        </RadialGradientBrush>
-                                    </Ellipse.Fill>
-                                    <Ellipse.Effect>
-                                        <BlurEffect Radius="12" />
-                                    </Ellipse.Effect>
-                                </Ellipse>
-                                <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
-                                    <Line.RenderTransform>
-                                        <RotateTransform x:Name="NeedleRightRotate" Angle="-45" CenterX="40" CenterY="56" />
-                                    </Line.RenderTransform>
-                                </Line>
-                                <!-- static background VU scale (labels and ticks) -->
-                                <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                                <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                                <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
-                                <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
-                            </Canvas>
-                        </Grid>
-                    </Border>
-                </StackPanel>
+                                        <!-- Right rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
+                                        <Border Background="White" BorderBrush="#ddd" BorderThickness="1" CornerRadius="4" Padding="6" Margin="2,0" Height="44" Width="76">
+                                            <Grid>
+                                                <Canvas Width="80" Height="60" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <Canvas.Clip>
+                                                        <RectangleGeometry Rect="6,6,68,44" />
+                                                    </Canvas.Clip>
+                                                    <Rectangle Canvas.Left="6" Canvas.Top="6" Width="68" Height="44" Fill="White" Stroke="#eee" RadiusX="3" RadiusY="3" />
+                                                    <!-- realistic backlight glow (warm) under needle, above face -->
+                                                    <Ellipse Canvas.Left="12" Canvas.Top="20" Width="56" Height="28" Opacity="0.9">
+                                                        <Ellipse.Fill>
+                                                            <RadialGradientBrush GradientOrigin="0.5,0.8" Center="0.5,0.8" RadiusX="0.6" RadiusY="0.5">
+                                                                <GradientStop Color="#FFFFF4" Offset="0" />
+                                                                <GradientStop Color="#FFF0D0" Offset="0.4" />
+                                                                <GradientStop Color="#00FFFFFF" Offset="1" />
+                                                            </RadialGradientBrush>
+                                                        </Ellipse.Fill>
+                                                        <Ellipse.Effect>
+                                                            <BlurEffect Radius="12" />
+                                                        </Ellipse.Effect>
+                                                    </Ellipse>
+                                                    <Line X1="40" Y1="56" X2="40" Y2="22" Stroke="#FF4444" StrokeThickness="2" StrokeEndLineCap="Round">
+                                                        <Line.RenderTransform>
+                                                            <RotateTransform x:Name="NeedleRightRotate" Angle="-45" CenterX="40" CenterY="56" />
+                                                        </Line.RenderTransform>
+                                                    </Line>
+                                                    <!-- static background VU scale (labels and ticks) -->
+                                                    <Line X1="14" Y1="20" X2="14" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="6" Canvas.Top="8" Text="-20" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                    <Line X1="40" Y1="18" X2="40" Y2="28" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="32" Canvas.Top="8" Text="-10" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                    <Line X1="66" Y1="20" X2="66" Y2="26" Stroke="#888" StrokeThickness="1" />
+                                                    <TextBlock Canvas.Left="58" Canvas.Top="8" Text="0" FontSize="9" Foreground="#666" Width="20" TextAlignment="Center" />
+                                                </Canvas>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,0,0">
-                    <TextBlock Text="Volume" VerticalAlignment="Center" Margin="8,0" Foreground="White" />
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,0,0">
+                                        <TextBlock Text="Volume" VerticalAlignment="Center" Margin="8,0" Foreground="White" />
                     <Slider Name="SliderVolume" Minimum="0" Maximum="1" Value="0.8" Width="160" ValueChanged="SliderVolume_ValueChanged" Height="24">
                         <Slider.Resources>
                             <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
                         </Slider.Resources>
                     </Slider>
-                    <!-- Maximize/Restore button -->
-                    <Button Name="BtnMaxRestore" Click="BtnMaxRestore_Click" Style="{StaticResource BigButtonStyle}" Width="48" Height="32" Margin="6,0">▢</Button>
-                    <Button Name="BtnPower" Click="BtnPower_Click" Style="{StaticResource PowerButtonStyle}" Margin="6,0">⏻</Button>
-                </StackPanel>
-                    </Grid>
-
-                    <Grid Margin="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="120" />
-                        </Grid.ColumnDefinitions>
-                        <!-- background line to represent full track -->
-                        <Rectangle Grid.Column="0" Height="4" VerticalAlignment="Center" Fill="#444" RadiusX="2" RadiusY="2" />
-                        <Slider Name="SliderProgress" Minimum="0" Maximum="1" ValueChanged="SliderProgress_ValueChanged" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" Grid.Column="0" PreviewMouseLeftButtonDown="SliderProgress_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="SliderProgress_PreviewMouseLeftButtonUp">
-                            <Slider.Resources>
-                                <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
-                            </Slider.Resources>
-                        </Slider>
-                        <!-- removed small time display; main track info shows progress -->
-                    </Grid>
-
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-
-            <!-- Track info - monochrome LCD style -->
-            <Border Name="TrackInfoBorder" Background="#A7F07B" CornerRadius="4" BorderBrush="#224400" BorderThickness="1" Padding="8" Margin="0,8,0,0">
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Name="TxtTrackName" FontFamily="Consolas" FontWeight="Bold" Foreground="#001100" FontSize="14" TextTrimming="CharacterEllipsis" />
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <TextBlock Text="Status:" FontWeight="Bold" Foreground="#001100" />
-                        <TextBlock Name="TxtPlayStatus" Margin="6,0" Foreground="#001100" />
-                        <TextBlock Text="  Volume:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
-                        <TextBlock Name="TxtVolumeLevel" Margin="6,0" Foreground="#001100" />
-                        <TextBlock Text="  " />
-                        <TextBlock Text="Time:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
-                        <TextBlock Name="TxtTimeInfo" Margin="6,0" Foreground="#001100" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-                <GroupBox Header="Spectrum Analyzer" Margin="0,8,0,0" Foreground="White">
-                <Canvas Name="SpectrumCanvas" Height="150" Background="Black" />
-                <!-- Patch placeholder: no-op insertion to aid future patches -->
-            </GroupBox>
-
-                <GroupBox Name="AudioSettingsGroup" Header="Audio Settings" Margin="0,8,0,0" Foreground="White">
-                <ScrollViewer Height="300">
-                    <StackPanel>
-                <!-- Reworked audio settings layout: EQ (3/4) on the left, Effects (1/4) on the right -->
-                <Grid Margin="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="3*" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- EQ panel -->
-                    <Border Grid.Column="0" Padding="8" Margin="4" Background="#252525" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="Equalizer" FontWeight="Bold" Foreground="White" />
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="200" Margin="0,6,0,0">
-                                <StackPanel Orientation="Horizontal" Margin="6" HorizontalAlignment="Center">
-                                    <StackPanel.Resources>
-                                        <!-- apply textured thumb to sliders inside EQ panel -->
-                                        <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
-                                    </StackPanel.Resources>
-                                    <!-- 15 vertical band sliders with textured thumbs -->
-                                    <StackPanel Margin="6" HorizontalAlignment="Center">
-                                        <Slider Name="Band0" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
-                                        <TextBlock Text="25 Hz" HorizontalAlignment="Center" Foreground="White" />
+                    <!-- Clipping indicator: red LED bulb (fixed size). Uses radial brushes and glow effect when lit.
+                         Keep visible so it does not affect layout when toggled; use opacity to indicate off state. -->
+                    <Ellipse Name="ClipIndicator" Width="16" Height="16" Fill="{StaticResource LedOffBrushRed}" Stroke="#330000" StrokeThickness="1" Margin="8,0" VerticalAlignment="Center" Visibility="Visible" Opacity="0.18" />
+                                        <!-- Maximize/Restore button -->
+                                        <Button Name="BtnMaxRestore" Click="BtnMaxRestore_Click" Style="{StaticResource BigButtonStyle}" Width="48" Height="32" Margin="6,0">▢</Button>
+                                        <Button Name="BtnPower" Click="BtnPower_Click" Style="{StaticResource PowerButtonStyle}" Margin="6,0">⏻</Button>
                                     </StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center">
-                                        <Slider Name="Band1" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
-                                        <TextBlock Text="40 Hz" HorizontalAlignment="Center" Foreground="White" />
-                                    </StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band2" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="63 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band3" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="100 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band4" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="160 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                </Grid>
 
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band5" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="250 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band6" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="400 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band7" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="630 Hz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band8" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band9" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1.6 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
+                                <Grid Margin="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="120" />
+                                    </Grid.ColumnDefinitions>
+                                    <!-- background line to represent full track -->
+                                    <Rectangle Grid.Column="0" Height="4" VerticalAlignment="Center" Fill="#444" RadiusX="2" RadiusY="2" />
+                                    <Slider Name="SliderProgress" Minimum="0" Maximum="1" ValueChanged="SliderProgress_ValueChanged" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" Grid.Column="0" PreviewMouseLeftButtonDown="SliderProgress_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="SliderProgress_PreviewMouseLeftButtonUp">
+                                        <Slider.Resources>
+                                            <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
+                                        </Slider.Resources>
+                                    </Slider>
+                                    <!-- removed small time display; main track info shows progress -->
+                                </Grid>
 
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band10" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="2.5 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band11" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="4 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band12" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="6.3 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band13" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="10 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                    <StackPanel Margin="6" HorizontalAlignment="Center"><Slider Name="Band14" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="16 kHz" HorizontalAlignment="Center" Foreground="White" /></StackPanel>
-                                </StackPanel>
-                            </ScrollViewer>
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <!-- Effects panel -->
-                    <Border Grid.Column="1" Padding="8" Margin="4" Background="#222" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
-                            <TextBlock Text="Effects" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
-                            <StackPanel Orientation="Vertical" Margin="0,8,0,0">
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
-                                    <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Echo</Button>
-                                    <Slider Name="SliderEcho" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderEcho_ValueChanged" IsEnabled="False" />
-                                </StackPanel>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
-                                    <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Reverb</Button>
-                                    <Slider Name="SliderReverb" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderReverb_ValueChanged" IsEnabled="False" />
-                                </StackPanel>
-                                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
-                                    <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Stereo</Button>
-                                    <Slider Name="SliderStereo" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderStereo_ValueChanged" IsEnabled="False" />
-                                </StackPanel>
+
+                    <!-- Track info - monochrome LCD style -->
+                    <Border Name="TrackInfoBorder" Background="#A7F07B" CornerRadius="4" BorderBrush="#224400" BorderThickness="1" Padding="8" Margin="0,8,0,0">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Name="TxtTrackName" FontFamily="Consolas" FontWeight="Bold" Foreground="#001100" FontSize="14" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <TextBlock Text="Status:" FontWeight="Bold" Foreground="#001100" />
+                                <TextBlock Name="TxtPlayStatus" Margin="6,0" Foreground="#001100" />
+                                <TextBlock Text="  Volume:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
+                                <TextBlock Name="TxtVolumeLevel" Margin="6,0" Foreground="#001100" />
+                                <TextBlock Text="  " />
+                                <TextBlock Text="Time:" FontWeight="Bold" Margin="12,0" Foreground="#001100" />
+                                <TextBlock Name="TxtTimeInfo" Margin="6,0" Foreground="#001100" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                </Grid>
-                    </StackPanel>
-                </ScrollViewer>
-            </GroupBox>
-            </StackPanel>
-        </Border>
-    </Grid>
+                    <GroupBox Header="Spectrum Analyzer" Margin="0,8,0,0" Foreground="White">
+                        <Canvas Name="SpectrumCanvas" Height="150" Background="Black" HorizontalAlignment="Stretch" ClipToBounds="True" />
+                        <!-- Patch placeholder: no-op insertion to aid future patches -->
+                    </GroupBox>
+
+                    <GroupBox Name="AudioSettingsGroup" Header="Audio Settings" Margin="0,8,0,0" Foreground="White">
+                        <ScrollViewer Height="300">
+                            <StackPanel>
+                                <!-- Reworked audio settings layout: EQ (3/4) on the left, Effects (1/4) on the right -->
+                                <Grid Margin="4">
+                                    <Grid.ColumnDefinitions>
+                                        <!-- Give more room to the effects panel to avoid UI overlap -->
+                                        <ColumnDefinition Width="2.5*" />
+                                        <ColumnDefinition Width="1.5*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- EQ panel -->
+                                    <Border Grid.Column="0" Padding="8" Margin="4" Background="#252525" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="Equalizer" FontWeight="Bold" Foreground="White" />
+                                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="200" Margin="0,6,0,0">
+                                                <StackPanel Orientation="Horizontal" Margin="6" HorizontalAlignment="Center">
+                                                    <StackPanel.Resources>
+                                                        <!-- apply textured thumb to sliders inside EQ panel -->
+                                                        <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
+                                                    </StackPanel.Resources>
+                                                    <!-- 15 vertical band sliders with textured thumbs -->
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band0" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="25 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band1" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="40 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band2" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="63 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band3" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="100 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band4" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="160 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band5" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="250 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band6" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="400 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band7" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="630 Hz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band8" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="1 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band9" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="1.6 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band10" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="2.5 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band11" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="4 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band12" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="6.3 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band13" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="10 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                    <StackPanel Margin="6" HorizontalAlignment="Center">
+                                                        <Slider Name="Band14" Orientation="Vertical" Height="140" Width="34" Minimum="-12" Maximum="12" Value="0" ValueChanged="EqBand_ValueChanged" />
+                                                        <TextBlock Text="16 kHz" HorizontalAlignment="Center" Foreground="White" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Effects panel split into two columns: left = Echo/Reverb/Stereo, right = Bass/Treble -->
+                                    <Border Grid.Column="1" Padding="8" Margin="4" Background="#222" CornerRadius="4" BorderBrush="#3a3a3a" BorderThickness="1">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+                                            <TextBlock Text="Effects" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
+                                            <Grid Margin="0,8,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Left column: existing effects -->
+                                                <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Center">
+                                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                                        <Button Name="BtnEcho" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Echo</Button>
+                                                        <Slider Name="SliderEcho" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderEcho_ValueChanged" IsEnabled="False" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                                        <Button Name="BtnReverb" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Reverb</Button>
+                                                        <Slider Name="SliderReverb" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderReverb_ValueChanged" IsEnabled="False" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                                        <Button Name="BtnStereo" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Stereo</Button>
+                                                        <Slider Name="SliderStereo" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderStereo_ValueChanged" IsEnabled="False" />
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <!-- Right column: Bass and Treble boosts with button + slider UI to match other effects -->
+                                                <StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Center">
+                                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                                        <Button Name="BtnBass" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Bass</Button>
+                                                        <Slider Name="SliderBass" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderBass_ValueChanged" IsEnabled="False" />
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="0,6">
+                                                        <Button Name="BtnTreble" Style="{StaticResource BigButtonStyle}" Click="EffectToggled" Width="90">Treble</Button>
+                                                        <Slider Name="SliderTreble" Minimum="0" Maximum="1" Value="0" Width="120" ValueChanged="SliderTreble_ValueChanged" IsEnabled="False" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </GroupBox>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!-- Invisible corner resize handles -->
         <Thumb Name="ThumbTopLeft" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="SizeNWSE" DragDelta="ThumbTopLeft_DragDelta" Panel.ZIndex="1000" />
-        <Thumb Name="ThumbTopRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" DragDelta="ThumbTopRight_DragDelta" Panel.ZIndex="1000" />
+        <Thumb Name="ThumbTopRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="SizeNESW" DragDelta="ThumbTopRight_DragDelta" Panel.ZIndex="1000" Grid.Column="1" />
         <Thumb Name="ThumbBottomLeft" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Cursor="SizeNESW" DragDelta="ThumbBottomLeft_DragDelta" Panel.ZIndex="1000" />
-        <Thumb Name="ThumbBottomRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragDelta="ThumbBottomRight_DragDelta" Panel.ZIndex="1000" />
+        <Thumb Name="ThumbBottomRight" Style="{StaticResource InvisibleCornerThumbStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragDelta="ThumbBottomRight_DragDelta" Panel.ZIndex="1000" Grid.Column="1" />
     </Grid>
 </Window>
