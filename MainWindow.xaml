@@ -307,6 +307,8 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <!-- Converter for toggles visibility -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
     <Grid Margin="0">
         <Grid.ColumnDefinitions>
@@ -377,7 +379,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Button Name="BtnToggleList" Click="BtnToggleList_Click" Width="28" Height="28" HorizontalAlignment="Left" Grid.Column="0">☰</Button>
+                        <!-- BtnToggleList moved into MP3 Player deck (bottom-left of that deck) -->
                         <Button Name="BtnToggleAudio" Click="BtnToggleAudio_Click" Width="28" Height="28" HorizontalAlignment="Right" Grid.Column="2">⚙</Button>
                     </Grid>
                     <Border x:Name="MainPlayerBorder" BorderBrush="Gray" BorderThickness="1" Padding="8" CornerRadius="4" MouseLeftButtonDown="MainPlayerBorder_MouseLeftButtonDown">
@@ -392,20 +394,7 @@
                                         <!-- volume and other right controls -->
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="0">
-                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnPrev" Click="BtnPrev_Click" Margin="6">◀</Button>
-                                            <TextBlock Text="Prev" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnPlayPause" Click="BtnPlayPause_Click" Margin="6">Play</Button>
-                                            <TextBlock Text="Play / Pause" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                                        </StackPanel>
-                                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
-                                            <Button Style="{StaticResource BigButtonStyle}" Name="BtnNext" Click="BtnNext_Click" Margin="6">▶</Button>
-                                            <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
-                                        </StackPanel>
-                                    </UniformGrid>
+                                    <!-- Playback controls moved to MP3 Player deck below; keep VU meters and right controls here -->
                                     <!-- VU meters (Left / Right) between playback and volume controls -->
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0">
                                         <!-- Left rectangular VU (white rectangle display). Mount point below visible area (not shown). -->
@@ -502,25 +491,102 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <Grid Margin="4">
+                                <!-- Progress slider moved to MP3 Player deck below -->
+
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- MP3 Player deck (playback controls moved here) -->
+                    <StackPanel Orientation="Vertical" Margin="0,8,0,0">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleMp3Deck" Width="32" Height="28" HorizontalAlignment="Left" VerticalAlignment="Top" Content="▾" ToolTip="Toggle MP3 Player Deck" />
+                            <TextBlock Text="MP3 Player" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" />
+                        </Grid>
+                        <Border Background="#1b1b1b" Padding="8" Margin="0,6,0,0" Visibility="{Binding IsChecked, ElementName=ToggleMp3Deck, Converter={StaticResource BoolToVis}}" CornerRadius="4" BorderBrush="#333" BorderThickness="1">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="36" />
+                                </Grid.RowDefinitions>
+                                <!-- Playback controls -->
+                                <UniformGrid Columns="3" Rows="1" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Row="0">
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource BigButtonStyle}" Name="BtnPrev" Click="BtnPrev_Click" Margin="6">◀</Button>
+                                        <TextBlock Text="Prev" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource BigButtonStyle}" Name="BtnPlayPause" Click="BtnPlayPause_Click" Margin="6">Play</Button>
+                                        <TextBlock Text="Play / Pause" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource BigButtonStyle}" Name="BtnNext" Click="BtnNext_Click" Margin="6">▶</Button>
+                                        <TextBlock Text="Next" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </UniformGrid>
+
+                                <!-- Progress slider -->
+                                <Grid Margin="4" Grid.Row="1">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="120" />
                                     </Grid.ColumnDefinitions>
-                                    <!-- background line to represent full track -->
                                     <Rectangle Grid.Column="0" Height="4" VerticalAlignment="Center" Fill="#444" RadiusX="2" RadiusY="2" />
                                     <Slider Name="SliderProgress" Minimum="0" Maximum="1" ValueChanged="SliderProgress_ValueChanged" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" Grid.Column="0" PreviewMouseLeftButtonDown="SliderProgress_PreviewMouseLeftButtonDown" PreviewMouseLeftButtonUp="SliderProgress_PreviewMouseLeftButtonUp">
                                         <Slider.Resources>
                                             <Style TargetType="Thumb" BasedOn="{StaticResource LargeThumbStyle}" />
                                         </Slider.Resources>
                                     </Slider>
-                                    <!-- removed small time display; main track info shows progress -->
                                 </Grid>
 
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                <!-- Bottom row: moved BtnToggleList to bottom-left of the deck -->
+                                <Grid Grid.Row="2">
+                                    <Button Name="BtnToggleList" Click="BtnToggleList_Click" Width="28" Height="28" HorizontalAlignment="Left" VerticalAlignment="Center">☰</Button>
+                                </Grid>
+                            </Grid>
+                        </Border>
 
+                        <!-- Radio and YouTube decks follow -->
+                        <!-- Radio deck -->
+                        <Grid>
+                            <ToggleButton x:Name="ToggleRadioDeck" Width="32" Height="28" HorizontalAlignment="Left" VerticalAlignment="Top" Content="▾" ToolTip="Toggle Radio Deck" />
+                            <TextBlock Text="Radio" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" />
+                        </Grid>
+                        <Border Background="#1b1b1b" Padding="8" Margin="0,6,0,0" Visibility="{Binding IsChecked, ElementName=ToggleRadioDeck, Converter={StaticResource BoolToVis}}" CornerRadius="4" BorderBrush="#333" BorderThickness="1">
+                            <StackPanel>
+                                <TextBlock x:Name="TxtRadioStationName" Text="(no station)" Foreground="White" FontWeight="Bold" FontSize="13" />
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Button x:Name="BtnScanBack" Width="44" Height="28" Click="BtnScanBack_Click">◀◀</Button>
+                                    <!-- Horizontal vintage tuner -->
+                                    <Border Width="800" Height="80" Background="#101010" BorderBrush="#444" BorderThickness="1" Margin="12,0" CornerRadius="4">
+                                        <Grid>
+                                            <!-- Frequency labels and ticks will be drawn into this canvas at runtime -->
+                                            <Canvas x:Name="TunerCanvas" Margin="8">
+                                                <!-- Red indicator line (vertical line over horizontal track) placed inside canvas -->
+                                                <Rectangle x:Name="TunerIndicator" Width="3" Height="64" Fill="#FF3333" />
+                                            </Canvas>
+                                        </Grid>
+                                    </Border>
+                                    <Button x:Name="BtnScanForward" Width="44" Height="28" Click="BtnScanForward_Click">▶▶</Button>
+                                </StackPanel>
+                                <TextBlock x:Name="TxtRadioFrequency" Text="-- MHz" Foreground="White" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- YouTube deck -->
+                        <Grid Margin="0,8,0,0">
+                            <ToggleButton x:Name="ToggleYoutubeDeck" Width="32" Height="28" HorizontalAlignment="Left" VerticalAlignment="Top" Content="▾" ToolTip="Toggle YouTube Deck" />
+                            <TextBlock Text="YouTube" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" />
+                        </Grid>
+                        <Border Background="#1b1b1b" Padding="8" Margin="0,6,0,0" Visibility="{Binding IsChecked, ElementName=ToggleYoutubeDeck, Converter={StaticResource BoolToVis}}" CornerRadius="4" BorderBrush="#333" BorderThickness="1">
+                            <!-- Placeholder YouTube UI -->
+                            <StackPanel>
+                                <TextBlock Text="YouTube player area (placeholder)" Foreground="White" />
+                                <!-- future YouTube controls / webview go here -->
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
 
                     <!-- Track info - monochrome LCD style -->
                     <Border Name="TrackInfoBorder" Background="#A7F07B" CornerRadius="4" BorderBrush="#224400" BorderThickness="1" Padding="8" Margin="0,8,0,0">

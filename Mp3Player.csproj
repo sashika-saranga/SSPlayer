@@ -10,7 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Images\icon.ico" />
+	<Content Include="Images\icon.ico" />
+	<Content Include="Data\radio_stations.json">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
   </ItemGroup>
 
   <ItemGroup>

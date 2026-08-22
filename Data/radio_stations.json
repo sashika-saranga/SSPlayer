@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "Shaa FM",
+    "Url": "https://radio.lotustechnologieslk.net:2020/stream/shaafmgarden/stream/1/",
+    "Frequencies": [90.9, 91.1]
+  },
+  {
+    "Name": "ITN FM",
+    "Url": "https://cp12.serverse.com/proxy/itnfm?mp=/stream",
+    "Frequencies": [93.5, 97.7]
+  }
+]

@@ -14,11 +14,209 @@ using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls.Primitives;
 using Mp3Player.Audio;
+using System.Text.Json;
 
 namespace Mp3Player
 {
+    public class RadioStation
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
+        public List<double>? Frequencies { get; set; }
+    }
+
     public partial class MainWindow : Window
     {
+        private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetupTunerVisuals();
+                // set initial indicator position
+                tunerCurrentFreq = Math.Clamp(tunerCurrentFreq, TunerMinFreq, TunerMaxFreq);
+                UpdateTunerIndicatorPosition();
+
+                tunerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(20) };
+                tunerTimer.Tick += TunerTimer_Tick;
+            }
+            catch { }
+        }
+
+        private void SetupTunerVisuals()
+        {
+            try
+            {
+                if (TunerCanvas == null) return;
+                TunerCanvas.Children.Clear();
+                double width = TunerCanvas.ActualWidth;
+                double height = TunerCanvas.ActualHeight;
+                if (width == 0 || height == 0)
+                {
+                    // set a default size if not measured yet
+                    width = 104; height = 304;
+                }
+
+                // Draw subtle green backlight glow and central horizontal track (vintage tuner style)
+                var ledColor = Color.FromRgb(0xA7, 0xF0, 0x7B);
+                var ledBrush = new SolidColorBrush(ledColor);
+
+                // glow behind the track
+                var glow = new Rectangle { Height = 14, Fill = ledBrush, Opacity = 0.18, RadiusX = 8, RadiusY = 8 };
+                Canvas.SetTop(glow, (height - glow.Height) / 2);
+                Canvas.SetLeft(glow, 8);
+                glow.Width = Math.Max(0, width - 16);
+                try { glow.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = ledColor, BlurRadius = 18, ShadowDepth = 0, Opacity = 0.9 }; } catch { }
+                TunerCanvas.Children.Add(glow);
+
+                var track = new Rectangle { Height = 4, Fill = new SolidColorBrush(Color.FromRgb(0x12,0x12,0x12)), RadiusX = 2, RadiusY = 2 };
+                Canvas.SetTop(track, (height - track.Height) / 2);
+                Canvas.SetLeft(track, 8);
+                track.Width = width - 16;
+                TunerCanvas.Children.Add(track);
+
+                // Draw ticks and labels every 0.5 MHz across the width, label every 1.0 MHz
+                double range = TunerMaxFreq - TunerMinFreq;
+                int steps = (int)Math.Round(range / 0.5);
+                for (int i = 0; i <= steps; i++)
+                {
+                    double freq = TunerMinFreq + i * 0.5;
+                    double rel = (freq - TunerMinFreq) / range; // 0..1 left..right
+                    double x = 8 + rel * (width - 16);
+
+                    double tickHeight = (i % 2 == 0) ? 14 : 8; // major every 1.0 MHz
+                    var tick = new Line { Y1 = (height / 2) - tickHeight / 2, Y2 = (height / 2) + tickHeight / 2, X1 = x, X2 = x, Stroke = ledBrush, StrokeThickness = 1 };
+                    TunerCanvas.Children.Add(tick);
+
+                    if (Math.Abs(freq * 10 % 10) < 0.001) // integer or .0
+                    {
+                        var lbl = new TextBlock { Text = freq.ToString("0"), Foreground = ledBrush, FontSize = 11 };
+                        // place label slightly below the track
+                        Canvas.SetLeft(lbl, x - 12);
+                        Canvas.SetTop(lbl, (height / 2) + tickHeight / 2 + 4);
+                        TunerCanvas.Children.Add(lbl);
+                    }
+                }
+
+                // ensure indicator is on top of the drawn scale
+                try
+                {
+                    if (TunerIndicator != null)
+                    {
+                        // size indicator to fit canvas height nicely
+                        TunerIndicator.Height = Math.Min(64, Math.Max(24, height - 16));
+                        if (!TunerCanvas.Children.Contains(TunerIndicator))
+                            TunerCanvas.Children.Add(TunerIndicator);
+                        // give the indicator a small glow for realism
+                        try
+                        {
+                            TunerIndicator.Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0x33, 0x33));
+                            TunerIndicator.Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = Colors.Red, BlurRadius = 10, ShadowDepth = 0, Opacity = 0.85 };
+                        }
+                        catch { }
+                        UpdateTunerIndicatorPosition();
+                    }
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+        private void TunerTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (Math.Abs(tunerTargetFreq - tunerCurrentFreq) < 0.001)
+                {
+                    // reached
+                    tunerTimer.Stop();
+                    tunerCurrentFreq = tunerTargetFreq;
+                    UpdateTunerIndicatorPosition();
+                    TxtRadioFrequency.Text = tunerCurrentFreq.ToString("0.0") + " MHz";
+                    // start playback for pending url
+                    if (!string.IsNullOrEmpty(tunerPendingUrl))
+                    {
+                        try
+                        {
+                            player.PlayStream(tunerPendingUrl, (float)SliderVolume.Value);
+                            // update displayed station name if we can find a matching entry
+                            try
+                            {
+                                var matchIdx = radioEntries.FindIndex(r => r.station != null && r.station.Url == tunerPendingUrl && Math.Abs(r.frequency - tunerCurrentFreq) < 0.01);
+                                if (matchIdx >= 0)
+                                {
+                                    currentRadioEntryIndex = matchIdx;
+                                    TxtRadioStationName.Text = radioEntries[matchIdx].station.Name;
+                                }
+                                else
+                                {
+                                    // try to match by URL only
+                                    var byUrl = radioEntries.FindIndex(r => r.station != null && r.station.Url == tunerPendingUrl);
+                                    if (byUrl >= 0)
+                                    {
+                                        currentRadioEntryIndex = byUrl;
+                                        TxtRadioStationName.Text = radioEntries[byUrl].station.Name;
+                                    }
+                                }
+                                TxtPlayStatus.Text = "Playing";
+                            }
+                            catch { }
+                        }
+                        catch { TxtPlayStatus.Text = "Radio play error"; }
+                        tunerPendingUrl = null;
+                    }
+                    // update scan button enabled state when we arrive
+                    try
+                    {
+                        if (BtnScanBack != null) BtnScanBack.IsEnabled = tunerCurrentFreq > TunerMinFreq + 0.0001;
+                        if (BtnScanForward != null) BtnScanForward.IsEnabled = tunerCurrentFreq < TunerMaxFreq - 0.0001;
+                    }
+                    catch { }
+                    return;
+                }
+
+                double dir = Math.Sign(tunerTargetFreq - tunerCurrentFreq);
+                double step = TunerStepPerSecond * (tunerTimer.Interval.TotalSeconds);
+                double diff = Math.Abs(tunerTargetFreq - tunerCurrentFreq);
+                if (step > diff) step = diff;
+                tunerCurrentFreq += dir * step;
+                UpdateTunerIndicatorPosition();
+                TxtRadioFrequency.Text = tunerCurrentFreq.ToString("0.0") + " MHz";
+                // if we're sliding into band edges, update buttons as we go
+                try
+                {
+                    if (BtnScanBack != null) BtnScanBack.IsEnabled = tunerCurrentFreq > TunerMinFreq + 0.0001;
+                    if (BtnScanForward != null) BtnScanForward.IsEnabled = tunerCurrentFreq < TunerMaxFreq - 0.0001;
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+        private void UpdateTunerIndicatorPosition()
+        {
+            try
+            {
+                if (TunerCanvas == null) return;
+                double height = TunerCanvas.ActualHeight;
+                double width = TunerCanvas.ActualWidth;
+                if (height == 0) height = 80;
+                if (width == 0) width = 300;
+                double range = TunerMaxFreq - TunerMinFreq;
+                double rel = (tunerCurrentFreq - TunerMinFreq) / range; // 0..1 left..right
+                rel = Math.Clamp(rel, 0.0, 1.0);
+                double x = 8 + rel * (width - 16); // same mapping as Setup
+                // position indicator at x inside the canvas
+                try
+                {
+                    Canvas.SetLeft(TunerIndicator, x - (TunerIndicator.Width / 2.0));
+                    Canvas.SetTop(TunerIndicator, (height - TunerIndicator.Height) / 2.0);
+                }
+                catch { }
+            }
+            catch { }
+        }
+
+
         private UserSettings userSettings = new UserSettings();
         private readonly DispatcherTimer settingsSaveTimer = new DispatcherTimer();
         private readonly AudioPlayer player = new AudioPlayer();
@@ -36,6 +234,18 @@ namespace Mp3Player
         private string currentTrackFullName = string.Empty;
         private int marqueePos = 0;
         private readonly DispatcherTimer markedTimer;
+        // Radio support
+        private List<RadioStation> radioStations = new List<RadioStation>();
+        private List<(RadioStation station, double frequency)> radioEntries = new List<(RadioStation, double)>();
+        private int currentRadioEntryIndex = -1;
+        // Tuner animation/visuals
+        private DispatcherTimer tunerTimer;
+        private double tunerCurrentFreq = 98.0;
+        private double tunerTargetFreq = 98.0;
+        private string? tunerPendingUrl = null;
+        private const double TunerMinFreq = 87.5;
+        private const double TunerMaxFreq = 108.0;
+        private const double TunerStepPerSecond = 2.0; // MHz per second
         // effect enable flags are managed via AudioPlayer; no local persistent flags required
         // Manage-audio state
         private bool manageEnabled = false;
@@ -49,6 +259,8 @@ namespace Mp3Player
         public MainWindow()
         {
             InitializeComponent();
+
+            this.Loaded += MainWindow_Loaded;
 
             player.SampleFramesAvailable += Player_SampleFramesAvailable;
             player.PlaybackEnded += Player_PlaybackEnded;
@@ -92,6 +304,21 @@ namespace Mp3Player
                 }
             }
             catch { }
+
+            // ensure tuner visuals update when control is resized
+            try
+            {
+                if (TunerCanvas != null)
+                {
+                    TunerCanvas.SizeChanged += (s, e) =>
+                    {
+                        SetupTunerVisuals();
+                        UpdateTunerIndicatorPosition();
+                    };
+                }
+            }
+            catch { }
+
             // ensure play indicator initial state
             SetButtonIndicator(BtnPlayPause, false);
             UpdatePowerIndicator();
@@ -123,6 +350,12 @@ namespace Mp3Player
             // clipping indicator subscription
             player.ClippingChanged += Player_ClippingChanged;
 
+            // load radio stations (non-fatal)
+            try { LoadRadioStations(); } catch { }
+
+            // prepare tuner visuals when window is loaded
+            this.Loaded += MainWindow_Loaded;
+
             // schedule settings save timer (debounce)
             settingsSaveTimer.Interval = TimeSpan.FromSeconds(5);
             settingsSaveTimer.Tick += (s, e) =>
@@ -131,6 +364,144 @@ namespace Mp3Player
                 SettingsService.Save(userSettings);
             };
         }
+
+        private void LoadRadioStations()
+        {
+            string dataPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "radio_stations.json");
+            if (!File.Exists(dataPath))
+            {
+                // try relative path for dev-time
+                dataPath = System.IO.Path.Combine("Data", "radio_stations.json");
+                if (!File.Exists(dataPath)) return;
+            }
+
+            var json = File.ReadAllText(dataPath);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            radioStations = JsonSerializer.Deserialize<List<RadioStation>>(json, options) ?? new List<RadioStation>();
+
+            // build flattened entries list
+            radioEntries.Clear();
+            foreach (var s in radioStations)
+            {
+                if (s.Frequencies != null && s.Frequencies.Count > 0)
+                {
+                    foreach (var f in s.Frequencies)
+                        radioEntries.Add((s, f));
+                }
+                else
+                {
+                    // if no frequency, still add with 0
+                    radioEntries.Add((s, 0));
+                }
+            }
+
+            // no stored list UI (tuner shows full FM band)
+        }
+
+        private void PlayRadioEntryIndex(int index)
+        {
+            if (index < 0 || index >= radioEntries.Count) return;
+            currentRadioEntryIndex = index;
+            var entry = radioEntries[index];
+            TxtRadioStationName.Text = entry.station.Name;
+            if (entry.frequency > 0)
+            {
+                // start smooth tuner move to the target frequency, then play stream when reached
+                tunerTargetFreq = entry.frequency;
+                tunerPendingUrl = entry.station.Url;
+                if (tunerTimer != null && !tunerTimer.IsEnabled)
+                    tunerTimer.Start();
+            }
+            else
+            {
+                TxtRadioFrequency.Text = "-- MHz";
+                // no frequency to animate to, play immediately
+                try { player.PlayStream(entry.station.Url, (float)SliderVolume.Value); }
+                catch { TxtPlayStatus.Text = "Radio play error"; }
+            }
+        }
+
+        private void BtnScanForward_Click(object sender, RoutedEventArgs e)
+        {
+            // Start scanning forward only. Find next stored station frequency above current tuner freq.
+            if (tunerCurrentFreq >= TunerMaxFreq - 0.0001)
+            {
+                BtnScanForward.IsEnabled = false;
+                return;
+            }
+            // If a station is currently playing, stop it immediately as soon as scanning begins
+            try
+            {
+                if (player != null && player.IsPlaying)
+                {
+                    player.Stop();
+                    TxtPlayStatus.Text = "Scanning...";
+                    // clear current radio entry index while scanning away
+                    currentRadioEntryIndex = -1;
+                }
+            }
+            catch { }
+
+            // find the next station frequency greater than current frequency
+            var candidate = radioEntries.Where(r => r.frequency > tunerCurrentFreq).OrderBy(r => r.frequency).FirstOrDefault();
+            if (candidate.station != null && candidate.frequency > 0)
+            {
+                tunerTargetFreq = Math.Min(candidate.frequency, TunerMaxFreq);
+                tunerPendingUrl = candidate.station.Url;
+                // update currentRadioEntryIndex if we can find it
+                int idx = radioEntries.FindIndex(r => r.station == candidate.station && Math.Abs(r.frequency - candidate.frequency) < 0.0001);
+                if (idx >= 0) currentRadioEntryIndex = idx;
+            }
+            else
+            {
+                // no next station - move to right end and disable forward
+                tunerTargetFreq = TunerMaxFreq;
+                tunerPendingUrl = null;
+            }
+
+            BtnScanBack.IsEnabled = true;
+            if (tunerTimer != null && !tunerTimer.IsEnabled) tunerTimer.Start();
+        }
+
+        private void BtnScanBack_Click(object sender, RoutedEventArgs e)
+        {
+            // Start scanning backward only. Find previous stored station frequency below current tuner freq.
+            if (tunerCurrentFreq <= TunerMinFreq + 0.0001)
+            {
+                BtnScanBack.IsEnabled = false;
+                return;
+            }
+            // If a station is currently playing, stop it immediately as soon as scanning begins
+            try
+            {
+                if (player != null && player.IsPlaying)
+                {
+                    player.Stop();
+                    TxtPlayStatus.Text = "Scanning...";
+                    currentRadioEntryIndex = -1;
+                }
+            }
+            catch { }
+
+            var candidate = radioEntries.Where(r => r.frequency < tunerCurrentFreq && r.frequency > 0).OrderByDescending(r => r.frequency).FirstOrDefault();
+            if (candidate.station != null && candidate.frequency > 0)
+            {
+                tunerTargetFreq = Math.Max(candidate.frequency, TunerMinFreq);
+                tunerPendingUrl = candidate.station.Url;
+                int idx = radioEntries.FindIndex(r => r.station == candidate.station && Math.Abs(r.frequency - candidate.frequency) < 0.0001);
+                if (idx >= 0) currentRadioEntryIndex = idx;
+            }
+            else
+            {
+                // no previous station - move to left end and disable back
+                tunerTargetFreq = TunerMinFreq;
+                tunerPendingUrl = null;
+            }
+
+            BtnScanForward.IsEnabled = true;
+            if (tunerTimer != null && !tunerTimer.IsEnabled) tunerTimer.Start();
+        }
+
 
         private void UpdatePowerIndicator()
         {

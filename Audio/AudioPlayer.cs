@@ -14,7 +14,10 @@ namespace Mp3Player.Audio
     {
         private IWavePlayer? outputDevice;
         private AudioFileReader? audioFileReader;
+        private WaveStream? waveStreamReader;
         private ISampleProvider? finalSampleProvider;
+        private VolumeSampleProvider? volumeProvider;
+        private float masterVolume = 1f;
         private EqualizerSampleProvider? equalizer;
         private BassTrebleSampleProvider? bassTreble;
         private EchoSampleProvider? echo;
@@ -31,15 +34,17 @@ namespace Mp3Player.Audio
         // Raised when playback naturally reaches the end of a file
         public event EventHandler? PlaybackEnded;
 
-        public TimeSpan CurrentTime => audioFileReader?.CurrentTime ?? TimeSpan.Zero;
-        public TimeSpan TotalTime => audioFileReader?.TotalTime ?? TimeSpan.Zero;
+        public TimeSpan CurrentTime => waveStreamReader?.CurrentTime ?? audioFileReader?.CurrentTime ?? TimeSpan.Zero;
+        public TimeSpan TotalTime => waveStreamReader?.TotalTime ?? audioFileReader?.TotalTime ?? TimeSpan.Zero;
         public bool IsPlaying { get; private set; }
 
         public void PlayFile(string path, float volume)
         {
             Stop();
 
-            audioFileReader = new AudioFileReader(path) { Volume = volume };
+            audioFileReader = new AudioFileReader(path) { Volume = 1f };
+            // keep generic waveStreamReader reference for unified handling
+            waveStreamReader = audioFileReader;
 
             // build processing chain: equalizer -> aggregator (FFT) -> metering -> output
             equalizer = new EqualizerSampleProvider(audioFileReader.ToSampleProvider(), EqGains);
@@ -77,8 +82,67 @@ namespace Mp3Player.Audio
 
             finalSampleProvider = clipDetector;
 
+            // apply master volume at the end of the pipeline
+            volumeProvider = new VolumeSampleProvider(finalSampleProvider) { Volume = masterVolume };
+
             outputDevice = new WaveOutEvent();
-            outputDevice.Init(finalSampleProvider.ToWaveProvider());
+            outputDevice.Init(volumeProvider.ToWaveProvider());
+            // hook playback stopped to detect natural end
+            outputDevice.PlaybackStopped += OutputDevice_PlaybackStopped;
+            outputDevice.Play();
+            IsPlaying = true;
+        }
+
+        // Play an internet stream or other URL-supported source
+        public void PlayStream(string url, float volume)
+        {
+            Stop();
+
+            // MediaFoundationReader can open many streaming urls (mp3/http)
+            var reader = new MediaFoundationReader(url);
+            waveStreamReader = reader;
+
+            // build processing chain using reader as source
+            equalizer = new EqualizerSampleProvider(reader.ToSampleProvider(), EqGains);
+
+            // add bass/treble processing after EQ
+            bassTreble = new BassTrebleSampleProvider(equalizer);
+            bassTreble.SetBassLevel(bassLevel);
+            bassTreble.EnableBass(bassEnabled);
+            bassTreble.SetTrebleLevel(trebleLevel);
+            bassTreble.EnableTreble(trebleEnabled);
+
+            // add echo and reverb in chain
+            echo = new EchoSampleProvider(bassTreble, echoLevel);
+            reverb = new ReverbSampleProvider(echo, reverbLevel);
+            stereo = new StereoWidenSampleProvider(reverb, stereoLevel);
+
+            // aggregator computes FFT and raises mapped band levels
+            aggregator = new SampleAggregator(stereo, 2048);
+            aggregator.FftCalculated += (s, a) => SampleFramesAvailable?.Invoke(this, a);
+
+            // add metering so callers can observe peak levels if needed
+            var metering = new MeteringSampleProvider(aggregator);
+            metering.StreamVolume += (s, a) =>
+            {
+                try
+                {
+                    StreamVolumeAvailable?.Invoke(this, a.MaxSampleValues ?? new float[0]);
+                }
+                catch { }
+            };
+
+            // wrap with clipping detector and forward clipping events
+            var clipDetector = new ClippingDetectorSampleProvider(metering);
+            clipDetector.ClippingChanged += (s, isClipping) => { try { ClippingChanged?.Invoke(this, isClipping); } catch { } };
+
+            finalSampleProvider = clipDetector;
+
+            // apply master volume at the end of the pipeline
+            volumeProvider = new VolumeSampleProvider(finalSampleProvider) { Volume = masterVolume };
+
+            outputDevice = new WaveOutEvent();
+            outputDevice.Init(volumeProvider.ToWaveProvider());
             // hook playback stopped to detect natural end
             outputDevice.PlaybackStopped += OutputDevice_PlaybackStopped;
             outputDevice.Play();
@@ -107,17 +171,33 @@ namespace Mp3Player.Audio
 
         public void SetVolume(float volume)
         {
-            if (audioFileReader != null)
+            masterVolume = volume;
+            if (volumeProvider != null)
+            {
+                volumeProvider.Volume = masterVolume;
+            }
+            else if (audioFileReader != null)
+            {
+                // fallback for older path
                 audioFileReader.Volume = volume;
+            }
         }
 
         public void Seek(TimeSpan position)
         {
-            if (audioFileReader == null) return;
+            if (audioFileReader == null && waveStreamReader == null) return;
             // clamp
             if (position < TimeSpan.Zero) position = TimeSpan.Zero;
-            if (position > audioFileReader.TotalTime) position = audioFileReader.TotalTime;
-            audioFileReader.CurrentTime = position;
+            if (audioFileReader != null)
+            {
+                if (position > audioFileReader.TotalTime) position = audioFileReader.TotalTime;
+                audioFileReader.CurrentTime = position;
+            }
+            else if (waveStreamReader != null && waveStreamReader.CanSeek)
+            {
+                if (position > waveStreamReader.TotalTime) position = waveStreamReader.TotalTime;
+                waveStreamReader.CurrentTime = position;
+            }
         }
 
         public void Pause()
@@ -155,6 +235,11 @@ namespace Mp3Player.Audio
                     audioFileReader.Dispose();
                     audioFileReader = null;
                 }
+                if (waveStreamReader != null)
+                {
+                    try { waveStreamReader.Dispose(); } catch { }
+                    waveStreamReader = null;
+                }
             }
             IsPlaying = false;
         }
@@ -188,6 +273,16 @@ namespace Mp3Player.Audio
             }
         }
 
+        public void EnableEcho(bool enable)
+        {
+            echoEnabled = enable;
+            if (echo != null)
+            {
+                // Toggle echo by setting level or zero
+                echo.SetLevel(enable ? echoLevel : 0f);
+            }
+        }
+
         public void UpdateBassLevel(float level)
         {
             bassLevel = level;
@@ -203,42 +298,6 @@ namespace Mp3Player.Audio
             if (bassTreble != null)
             {
                 bassTreble.SetTrebleLevel(level);
-            }
-        }
-
-        public void UpdateReverbLevel(float level)
-        {
-            reverbLevel = level;
-            if (reverb != null)
-            {
-                reverb.SetLevel(level);
-            }
-        }
-
-        public void UpdateStereoLevel(float level)
-        {
-            stereoLevel = level;
-            if (stereo != null)
-            {
-                stereo.SetLevel(level);
-            }
-        }
-
-        public void EnableEcho(bool enable)
-        {
-            echoEnabled = enable;
-            if (echo != null)
-            {
-                echo.SetLevel(enable ? echoLevel : 0f);
-            }
-        }
-
-        public void EnableReverb(bool enable)
-        {
-            reverbEnabled = enable;
-            if (reverb != null)
-            {
-                reverb.SetLevel(enable ? reverbLevel : 0f);
             }
         }
 
@@ -260,11 +319,40 @@ namespace Mp3Player.Audio
             }
         }
 
+        public void UpdateReverbLevel(float level)
+        {
+            reverbLevel = level;
+            if (reverb != null)
+            {
+                reverb.SetLevel(level);
+            }
+        }
+
+        public void EnableReverb(bool enable)
+        {
+            reverbEnabled = enable;
+            if (reverb != null)
+            {
+                // Reverb provider exposes SetLevel; toggle by setting level to stored value or zero
+                reverb.SetLevel(enable ? reverbLevel : 0f);
+            }
+        }
+
+        public void UpdateStereoLevel(float level)
+        {
+            stereoLevel = level;
+            if (stereo != null)
+            {
+                stereo.SetLevel(level);
+            }
+        }
+
         public void EnableStereo(bool enable)
         {
             stereoEnabled = enable;
             if (stereo != null)
             {
+                // Stereo widen provider exposes SetLevel; toggle by setting level to stored value or zero
                 stereo.SetLevel(enable ? stereoLevel : 0f);
             }
         }
