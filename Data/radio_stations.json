@@ -1,12 +1,77 @@
 [
   {
+    "Name": "Hiru FM",
+    "Url": "https://radio.lotustechnologieslk.net:2020/stream/hirufmgarden",
+    "Frequencies": [96.1, 96.3]
+  },
+  {
     "Name": "Shaa FM",
-    "Url": "https://radio.lotustechnologieslk.net:2020/stream/shaafmgarden/stream/1/",
+    "Url": "https://radio.lotustechnologieslk.net:2020/stream/shaafmgarden/stream/1",
     "Frequencies": [90.9, 91.1]
   },
   {
-    "Name": "ITN FM",
+    "Name": "FM Derana",
+    "Url": "https://cp12.serverse.com/proxy/fmderana/stream/1/",
+    "Frequencies": [92.2, 92.4]
+  },
+  {
+    "Name": "Sun FM",
+    "Url": "https://radio.lotustechnologieslk.net:2020/stream/sunfmgarden/stream/1/",
+    "Frequencies": [98.7, 98.9]
+  },
+  {
+    "Name": "Y FM",
+    "Url": "https://mbc.thestreamtech.com:7032/",
+    "Frequencies": [92.7]
+  },
+  {
+    "Name": "Sirasa FM",
+    "Url": "https://mbc.thestreamtech.com:8087/stream/1/",
+    "Frequencies": [106.5, 106.7]
+  },
+  {
+    "Name": "Neth FM",
+    "Url": "https://cp11.serverse.com/proxy/nethfm/stream",
+    "Frequencies": [94.8, 95.0]
+  },
+  {
+    "Name": "Rhythm FM",
+    "Url": "https://srv01.onlineradio.voaplus.com/rhythmfm",
+    "Frequencies": [95.6, 95.8]
+  },
+  {
+    "Name": "Siyatha FM",
+    "Url": "https://dc02.onlineradio.voaplus.com/siyathafm",
+    "Frequencies": [98.2, 98.4]
+  },
+  {
+    "Name": "Gold FM",
+    "Url": "https://radio.lotustechnologieslk.net:8000/stream/1/",
+    "Frequencies": [93.0, 93.2]
+  },
+  {
+    "Name": "V FM",
+    "Url": "https://dc1.serverse.com/proxy/fmlanka/stream/1/",
+    "Frequencies": [107.0]
+  },
+  {
+    "Name": "Lakhanda",
     "Url": "https://cp12.serverse.com/proxy/itnfm?mp=/stream",
-    "Frequencies": [93.5, 97.7]
+    "Frequencies": [87.9, 88.5, 97.6]
+  },
+  {
+    "Name": "E FM",
+    "Url": "https://a3.asurahosting.com/listen/efm/radio.mp3",
+    "Frequencies": [88.3]
+  },
+  {
+    "Name": "Shree FM",
+    "Url": "https://a3.asurahosting.com/listen/shreefm/radio.mp3",
+    "Frequencies": [100.0, 100.2]
+  },
+  {
+    "Name": "Ran FM",
+    "Url": "https://a3.asurahosting.com/listen/ranfm/radio.mp3",
+    "Frequencies": [88.1, 100.5]
   }
 ]
